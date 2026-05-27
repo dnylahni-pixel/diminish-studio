@@ -5,6 +5,7 @@ import {
   Play, Pause, SkipBack, SkipForward,
   ChevronsLeft, ChevronsRight, SlidersHorizontal,
   Volume2, VolumeX, X, RefreshCw,
+  Guitar, Piano, Mic2, Music2, Drum, Waves, AudioLines,
 } from "lucide-react";
 import { useGetSong, getGetSongQueryKey } from "@workspace/api-client-react";
 import { Slider } from "@/components/ui/slider";
@@ -39,8 +40,10 @@ function shiftKey(key: string, n: number) {
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const BEAT_W  = 56;   // px per beat — tight, like the screenshot
-const HEAD_X  = 160;  // playhead from left
+const BEAT_W  = 56;
+const HEAD_X  = 160;
+// Timeline row height — tall enough for 70-80% font fill
+const TL_H    = 52;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface LyricLine  { time: number; text: string; chords: string[] }
@@ -57,11 +60,23 @@ function fmt(s: number) {
   return `${m}:${sec.toString().padStart(2,"0")}`;
 }
 
+// ─── Instrument icon map ──────────────────────────────────────────────────────
+function InstrumentIcon({ name, className }: { name: string; className?: string }) {
+  const n = name.toLowerCase();
+  if (n.includes("guitar") || n.includes("gitar"))  return <Guitar    className={className} />;
+  if (n.includes("piano") || n.includes("keys"))     return <Piano     className={className} />;
+  if (n.includes("vocal") || n.includes("voice") || n.includes("sing")) return <Mic2 className={className} />;
+  if (n.includes("drum") || n.includes("perc"))      return <Drum      className={className} />;
+  if (n.includes("bass"))                            return <AudioLines className={className} />;
+  if (n.includes("string") || n.includes("violin"))  return <Waves     className={className} />;
+  return <Music2 className={className} />;
+}
+
 // ─── Drag-to-change hook ──────────────────────────────────────────────────────
 function useDragChange(
   value: number,
   onChange: (v: number) => void,
-  pxPerStep: number,  // px of drag per 1 step
+  pxPerStep: number,
   step: number,
   min: number,
   max: number,
@@ -80,7 +95,7 @@ function useDragChange(
 
   const onPointerMove = useCallback((e: React.PointerEvent) => {
     if (!dragging.current) return;
-    const dy    = startY.current - e.clientY;          // up = positive
+    const dy    = startY.current - e.clientY;
     const steps = Math.round(dy / pxPerStep);
     const next  = Math.min(max, Math.max(min, startVal.current + steps * step));
     onChange(+next.toFixed(2));
@@ -107,14 +122,13 @@ export function PlayerPage() {
   const [muted,     setMuted]     = useState<Record<number,boolean>>({});
   const [uiVisible, setUiVisible] = useState(true);
 
-  const timelineRef  = useRef<HTMLDivElement>(null);
-  const lyricsRef    = useRef<HTMLDivElement>(null);
-  const rafRef       = useRef(0);
-  const lastRef      = useRef(0);
-  const idleTimer    = useRef<ReturnType<typeof setTimeout>>();
-  const prevBeatRef  = useRef(-1);
+  const timelineRef = useRef<HTMLDivElement>(null);
+  const lyricsRef   = useRef<HTMLDivElement>(null);
+  const rafRef      = useRef(0);
+  const lastRef     = useRef(0);
+  const idleTimer   = useRef<ReturnType<typeof setTimeout>>();
+  const prevBeat    = useRef(-1);
 
-  // ── init tracks ────────────────────────────────────────────────────────
   useEffect(() => {
     if (!song?.tracks) return;
     const v: Record<number,number> = {}, m: Record<number,boolean> = {};
@@ -122,7 +136,6 @@ export function PlayerPage() {
     setVolumes(v); setMuted(m);
   }, [song]);
 
-  // ── playback RAF ───────────────────────────────────────────────────────
   useEffect(() => {
     if (!playing || !song) return;
     const tick = (now: number) => {
@@ -141,17 +154,16 @@ export function PlayerPage() {
     return () => cancelAnimationFrame(rafRef.current);
   }, [playing, song, tempo]);
 
-  // ── timeline SNAP scroll (tick by beat, not smooth) ────────────────────
+  // Snap scroll per beat
   useEffect(() => {
     if (!timelineRef.current || !song) return;
     const bps  = (song.bpm * tempo) / 60;
-    const beat = Math.floor(time * bps);             // integer beat index
-    if (beat === prevBeatRef.current) return;        // only move on new beat
-    prevBeatRef.current = beat;
+    const beat = Math.floor(time * bps);
+    if (beat === prevBeat.current) return;
+    prevBeat.current = beat;
     timelineRef.current.scrollLeft = Math.max(0, beat * BEAT_W - HEAD_X);
   }, [time, song, tempo]);
 
-  // ── lyrics smooth scroll ───────────────────────────────────────────────
   useEffect(() => {
     if (!lyricsRef.current || !song?.lyrics?.length) return;
     const ai = getActiveIdx(song.lyrics as LyricLine[], time);
@@ -160,7 +172,6 @@ export function PlayerPage() {
       ?.scrollIntoView({ behavior:"smooth", block:"center" });
   }, [time, song]);
 
-  // ── auto-hide UI ───────────────────────────────────────────────────────
   const resetIdle = useCallback(() => {
     setUiVisible(true);
     clearTimeout(idleTimer.current);
@@ -172,11 +183,9 @@ export function PlayerPage() {
   useEffect(() => { resetIdle(); }, [playing, resetIdle]);
   useEffect(() => () => clearTimeout(idleTimer.current), []);
 
-  // ── tempo drag ─────────────────────────────────────────────────────────
   const tempoDrag = useDragChange(tempo, setTempo, 6, 0.05, 0.3, 2.0);
   const keyDrag   = useDragChange(semitones, setSemitones, 14, 1, -12, 12);
 
-  // ─────────────────────────────────────────────────────────────────────
   if (isLoading || !song) {
     return (
       <div className="p-6 h-full flex flex-col gap-4">
@@ -193,22 +202,19 @@ export function PlayerPage() {
   const tracks   = (song.tracks        ?? []) as AudioTrack[];
 
   const activeCi = getActiveIdx(timeline, time);
-  const activeLi = getActiveIdx(lyrics,   time);
+  const activeLi = getActiveIdx(lyrics, time);
   const bpmDisplay = Math.round(song.bpm * tempo);
   const keyDisplay = shiftKey(song.key, semitones);
 
-  // Build beat-level grid: one cell per beat, spanning the full timeline
   const totalBeats = timeline.length > 0
     ? (timeline[timeline.length - 1].measure - 1) * 4 + timeline[timeline.length - 1].beat
     : 0;
 
-  // Map each beat index → chord that's active at that beat
   const beatToChord: string[] = [];
   let ci = 0;
   for (let b = 0; b < totalBeats; b++) {
     const bMeasure = Math.floor(b / 4) + 1;
     const bBeat    = (b % 4) + 1;
-    // advance chord pointer if next chord starts here or earlier
     while (
       ci + 1 < timeline.length &&
       (timeline[ci + 1].measure < bMeasure ||
@@ -217,9 +223,9 @@ export function PlayerPage() {
     beatToChord.push(ci >= 0 ? timeline[ci]?.chord ?? "" : "");
   }
 
-  // current beat index for playhead highlight
-  const bps          = (song.bpm * tempo) / 60;
-  const currentBeat  = Math.floor(time * bps);
+  const bps         = (song.bpm * tempo) / 60;
+  const currentBeat = Math.floor(time * bps);
+  const totalW      = Math.max(totalBeats * BEAT_W + HEAD_X * 2, 800);
 
   return (
     <div
@@ -228,14 +234,14 @@ export function PlayerPage() {
       onPointerDown={resetIdle}
       data-testid="player-page"
     >
-      {/* ── Header (auto-hide) ──────────────────────────────────────────── */}
+      {/* ── Header ─────────────────────────────────────────────────────── */}
       <motion.div
         animate={{ opacity: uiVisible ? 1 : 0, y: uiVisible ? 0 : -4 }}
-        transition={{ duration: 0.4 }}
-        className="flex-shrink-0 flex items-center gap-4 px-5 h-14 border-b border-border/40 pointer-events-none"
+        transition={{ duration: 0.35 }}
+        className="flex-shrink-0 flex items-center gap-3 px-4 h-14 border-b border-border/40"
         style={{ pointerEvents: uiVisible ? "auto" : "none" }}
       >
-        <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className="flex items-center gap-2.5 flex-1 min-w-0">
           <div className="w-9 h-9 rounded-lg bg-muted/70 border border-border/40 flex items-center justify-center flex-shrink-0">
             <svg className="w-4 h-4 text-muted-foreground" fill="currentColor" viewBox="0 0 20 20">
               <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z"/>
@@ -243,10 +249,9 @@ export function PlayerPage() {
           </div>
           <div className="min-w-0">
             <p className="font-semibold text-sm truncate leading-tight">{song.title}</p>
-            <p className="text-xs text-muted-foreground/70 truncate">{song.artist}</p>
+            <p className="text-xs text-muted-foreground/60 truncate">{song.artist}</p>
           </div>
         </div>
-        {/* Mixer button */}
         <button
           onClick={() => { setMixerOpen(p => !p); resetIdle(); }}
           className={cn(
@@ -263,80 +268,65 @@ export function PlayerPage() {
       {/* ── Chord Timeline ──────────────────────────────────────────────── */}
       <div
         className="flex-shrink-0 relative border-b border-border/40"
-        style={{ height: 72 }}
+        style={{ height: TL_H + 16 }}   /* beat row + measure-number row below */
         data-testid="chord-timeline"
       >
-        {/* Playhead */}
+        {/* Playhead dot only — no vertical line */}
         <div
-          className="absolute inset-y-0 z-20 pointer-events-none"
-          style={{ left: HEAD_X }}
+          className="absolute z-20 pointer-events-none"
+          style={{ left: HEAD_X, bottom: 16, transform: "translateX(-50%)" }}
         >
-          <div className="w-px h-full bg-primary/70" />
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary" />
+          <div className="w-2 h-2 rounded-full bg-primary" />
         </div>
 
-        {/* Scroll container — no visible scrollbar */}
+        {/* Scroll container */}
         <div
           ref={timelineRef}
-          className="h-full overflow-x-auto overflow-y-hidden"
+          className="overflow-x-auto overflow-y-hidden h-full"
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
-          <div
-            className="h-full flex flex-col"
-            style={{ width: Math.max(totalBeats * BEAT_W + HEAD_X * 2, 800) }}
-          >
-            {/* Measure number row */}
-            <div className="h-5 relative flex-shrink-0">
-              {Array.from({ length: Math.ceil(totalBeats / 4) }, (_, mi) => (
-                <span
-                  key={mi}
-                  className="absolute bottom-0.5 text-[9px] font-mono text-muted-foreground/35 select-none tracking-widest"
-                  style={{ left: mi * 4 * BEAT_W + 2 }}
-                >
-                  {mi + 1}
-                </span>
-              ))}
-            </div>
+          <div style={{ width: totalW, height: "100%", display: "flex", flexDirection: "column" }}>
 
-            {/* Beat blocks — all flush, no gaps */}
-            <div className="flex-1 flex relative">
+            {/* Beat blocks row */}
+            <div className="flex flex-row flex-shrink-0" style={{ height: TL_H }}>
               {Array.from({ length: totalBeats }, (_, bi) => {
-                const isDownbeat   = bi % 4 === 0;              // first beat of measure
+                const isDownbeat   = bi % 4 === 0;
                 const chord        = beatToChord[bi] ?? "";
-                const prevChord    = bi > 0 ? (beatToChord[bi - 1] ?? "") : "";
-                const chordChanged = chord !== prevChord || bi === 0;
+                const prevChord    = bi > 0 ? (beatToChord[bi - 1] ?? "") : null;
+                const showLabel    = chord !== prevChord || bi === 0;
                 const isActive     = bi === currentBeat;
-                const label        = chordChanged ? shiftChord(chord, semitones) : "";
+                const label        = showLabel ? shiftChord(chord, semitones) : "";
 
                 return (
                   <div
                     key={bi}
                     className={cn(
-                      "flex-shrink-0 flex items-center justify-center relative transition-colors duration-75",
+                      "flex-shrink-0 flex items-center justify-center relative",
                       isActive
-                        ? "bg-primary/12 dark:bg-primary/15"
-                        : "bg-muted/20 hover:bg-muted/35"
+                        ? "bg-primary/12 dark:bg-primary/18"
+                        : "bg-muted/15 hover:bg-muted/30"
                     )}
-                    style={{ width: BEAT_W, height: "100%" }}
+                    style={{ width: BEAT_W, height: TL_H }}
                     data-testid={`beat-${bi}`}
                   >
-                    {/* Left border — thick on downbeat, thin on other beats */}
+                    {/* Left border */}
                     <div
-                      className={cn(
-                        "absolute left-0 inset-y-0",
-                        isDownbeat
-                          ? "w-px bg-border/70"
-                          : "w-px bg-border/25"
-                      )}
+                      className="absolute left-0 top-0 bottom-0"
+                      style={{
+                        width: isDownbeat ? 2 : 1,
+                        background: isDownbeat
+                          ? "hsl(var(--foreground) / 0.35)"
+                          : "hsl(var(--foreground) / 0.14)",
+                      }}
                     />
-
-                    {/* Chord label — only show when chord changes */}
+                    {/* Chord label — big, fills ~75% of block height */}
                     {label && (
                       <span
                         className={cn(
-                          "font-mono font-semibold select-none truncate px-1",
-                          isActive ? "text-primary text-[11px]" : "text-foreground/55 text-[10px]",
+                          "font-mono font-bold select-none tracking-tight leading-none truncate px-0.5",
+                          isActive ? "text-primary" : "text-foreground/60",
                         )}
+                        style={{ fontSize: Math.round(TL_H * 0.42) }}
                       >
                         {label}
                       </span>
@@ -344,6 +334,21 @@ export function PlayerPage() {
                   </div>
                 );
               })}
+            </div>
+
+            {/* Measure numbers row — below blocks */}
+            <div className="flex flex-row flex-shrink-0 relative" style={{ height: 16 }}>
+              {Array.from({ length: Math.ceil(totalBeats / 4) }, (_, mi) => (
+                <div
+                  key={mi}
+                  className="absolute flex items-center"
+                  style={{ left: mi * 4 * BEAT_W, width: 4 * BEAT_W, height: 16 }}
+                >
+                  <span className="text-[9px] font-mono text-muted-foreground/35 select-none pl-1 tracking-widest">
+                    {mi + 1}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -356,11 +361,11 @@ export function PlayerPage() {
       {/* ── Lyrics ─────────────────────────────────────────────────────── */}
       <div
         ref={lyricsRef}
-        className="flex-1 overflow-y-auto overflow-x-hidden thin-scrollbar"
-        style={{ scrollbarWidth: "thin" }}
+        className="flex-1 overflow-y-auto overflow-x-hidden"
+        style={{ scrollbarWidth: "thin", scrollbarColor: "hsl(var(--border)) transparent" }}
         data-testid="lyrics-panel"
       >
-        <div className="max-w-xl mx-auto py-8 px-6 space-y-0">
+        <div className="max-w-xl mx-auto py-8 px-6">
           {lyrics.length === 0 ? (
             <p className="text-muted-foreground/40 text-sm text-center pt-16">No lyrics available</p>
           ) : lyrics.map((line, i) => {
@@ -368,7 +373,6 @@ export function PlayerPage() {
             const isPast   = i < activeLi;
             return (
               <div key={i} data-li={i} data-testid={`lyric-${i}`} className="py-2.5">
-                {/* Chord tags */}
                 {line.chords?.length > 0 && (
                   <div className="flex gap-1.5 mb-1">
                     {line.chords.map((c, j) => (
@@ -386,25 +390,23 @@ export function PlayerPage() {
                     ))}
                   </div>
                 )}
-                {/* Text */}
                 <p
                   className={cn(
                     "leading-snug font-medium transition-all duration-500",
-                    isActive  ? "text-foreground text-[1.35rem]" :
-                    isPast    ? "text-muted-foreground/30 text-xl" :
-                                "text-muted-foreground/50 text-xl"
+                    isActive ? "text-foreground text-[1.35rem]" :
+                    isPast   ? "text-muted-foreground/30 text-xl" :
+                               "text-muted-foreground/50 text-xl"
                   )}
                   dir="auto"
                 >
                   {line.text}
                 </p>
-                {/* Progress underline */}
                 {isActive && (
                   <motion.div
                     className="mt-1.5 h-px bg-primary/40 rounded-full origin-left"
                     initial={{ scaleX: 0 }}
                     animate={{ scaleX: 1 }}
-                    key={`underline-${i}`}
+                    key={`ul-${i}`}
                     transition={{
                       duration: lyrics[i+1] ? lyrics[i+1].time - line.time : 4,
                       ease: "linear",
@@ -422,83 +424,77 @@ export function PlayerPage() {
       <AnimatePresence>
         {mixerOpen && (
           <>
-            {/* Backdrop — click to close */}
             <motion.div
-              key="backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              key="bd"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="fixed inset-0 z-30 bg-background/60 backdrop-blur-sm md:hidden"
               onClick={() => setMixerOpen(false)}
             />
-            {/* Panel — full-height on mobile, drawer on desktop */}
             <motion.div
-              key="mixer"
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
+              key="mx"
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
               transition={{ type: "spring", stiffness: 380, damping: 40 }}
               className={cn(
                 "z-40 bg-card border-t border-border",
-                // Mobile: fixed full-screen overlay
-                "fixed inset-x-0 bottom-0 top-14 md:relative md:inset-auto md:top-auto",
-                // Desktop: inline drawer above transport
-                "md:flex-shrink-0"
+                "fixed inset-x-0 bottom-0 top-14 md:relative md:inset-auto md:top-auto md:flex-shrink-0"
               )}
               data-testid="mixer-drawer"
             >
               <div className="h-full overflow-y-auto px-5 pt-4 pb-6">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-5">
                   <span className="text-xs font-semibold text-muted-foreground tracking-widest uppercase">Mixer</span>
                   <button
                     onClick={() => setMixerOpen(false)}
                     className="text-muted-foreground/50 hover:text-muted-foreground transition-colors p-1"
-                    data-testid="btn-mixer-close"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
                   {tracks.map(track => {
                     const isMuted = muted[track.id] ?? false;
                     const vol     = volumes[track.id] ?? track.volume;
                     return (
-                      <div key={track.id} className="flex flex-col gap-2.5" data-testid={`track-${track.id}`}>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium truncate flex-1 capitalize">
-                            {track.label}
-                          </span>
+                      <div key={track.id} className="flex flex-col gap-3" data-testid={`track-${track.id}`}>
+                        {/* Icon + mute toggle */}
+                        <div className="flex items-center gap-2">
                           <button
                             onClick={() => setMuted(p => ({ ...p, [track.id]: !p[track.id] }))}
                             className={cn(
-                              "w-6 h-6 rounded text-[9px] font-black flex items-center justify-center border transition-colors ml-2 flex-shrink-0",
+                              "transition-colors p-1.5 rounded-md",
                               isMuted
-                                ? "bg-foreground/8 text-foreground/35 border-border/40"
-                                : "border-border/40 text-muted-foreground hover:text-foreground"
+                                ? "text-muted-foreground/30"
+                                : "text-primary hover:text-primary/70"
                             )}
+                            title={isMuted ? "Unmute" : "Mute"}
                             data-testid={`btn-mute-${track.id}`}
                           >
-                            M
+                            {isMuted
+                              ? <VolumeX className="w-5 h-5" />
+                              : <Volume2 className="w-5 h-5" />
+                            }
                           </button>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {isMuted
-                            ? <VolumeX className="w-3.5 h-3.5 text-muted-foreground/30 flex-shrink-0" />
-                            : <Volume2 className="w-3.5 h-3.5 text-muted-foreground/50 flex-shrink-0" />
-                          }
-                          <Slider
-                            value={[vol]}
-                            max={100}
-                            step={1}
-                            className="flex-1"
-                            onValueChange={([v]) => setVolumes(p => ({ ...p, [track.id]: v }))}
-                            disabled={isMuted}
-                            data-testid={`slider-${track.id}`}
+                          <InstrumentIcon
+                            name={track.instrument}
+                            className={cn(
+                              "w-4 h-4 flex-shrink-0",
+                              isMuted ? "text-muted-foreground/25" : "text-muted-foreground/60"
+                            )}
                           />
-                          <span className="text-[10px] font-mono text-muted-foreground/50 w-6 text-right tabular-nums">
-                            {vol}
-                          </span>
                         </div>
+                        {/* Volume slider */}
+                        <Slider
+                          value={[vol]}
+                          max={100}
+                          step={1}
+                          onValueChange={([v]) => setVolumes(p => ({ ...p, [track.id]: v }))}
+                          disabled={isMuted}
+                          data-testid={`slider-${track.id}`}
+                        />
+                        <span className="text-[10px] font-mono text-muted-foreground/40 tabular-nums">
+                          {vol}%
+                        </span>
                       </div>
                     );
                   })}
@@ -509,51 +505,50 @@ export function PlayerPage() {
         )}
       </AnimatePresence>
 
-      {/* ── Transport (auto-hide) ────────────────────────────────────────── */}
+      {/* ── Transport ───────────────────────────────────────────────────── */}
       <motion.div
         animate={{ opacity: uiVisible ? 1 : 0, y: uiVisible ? 0 : 6 }}
-        transition={{ duration: 0.4 }}
+        transition={{ duration: 0.35 }}
         className="flex-shrink-0 border-t border-border/40 bg-card/20 px-4 pt-2.5 pb-3 flex flex-col gap-2.5"
         style={{ pointerEvents: uiVisible ? "auto" : "none" }}
         data-testid="transport"
       >
-        {/* Seek — thin track */}
+        {/* Progress — thin custom bar */}
         <div className="flex items-center gap-3">
           <span className="text-[10px] font-mono text-muted-foreground/50 w-7 text-right tabular-nums">{fmt(time)}</span>
-          <div className="flex-1 relative flex items-center h-1">
-            {/* Custom thin progress */}
-            <div className="absolute inset-0 rounded-full bg-border/40" />
+          <div className="flex-1 relative h-[3px] rounded-full bg-border/40 overflow-hidden">
             <div
-              className="absolute left-0 top-0 bottom-0 rounded-full bg-primary/60"
+              className="absolute left-0 top-0 bottom-0 rounded-full bg-primary/60 transition-none"
               style={{ width: `${(time / (song.duration || 1)) * 100}%` }}
             />
-            {/* Invisible Slider for interaction */}
-            <Slider
-              value={[time]}
+            <input
+              type="range"
+              min={0}
               max={song.duration}
               step={0.1}
-              className="absolute inset-x-0 opacity-0 h-full cursor-pointer"
-              onValueChange={([v]) => { setTime(v); resetIdle(); }}
+              value={time}
+              onChange={e => { setTime(+e.target.value); resetIdle(); }}
+              className="absolute inset-0 w-full opacity-0 cursor-pointer h-full"
               data-testid="slider-progress"
             />
           </div>
           <span className="text-[10px] font-mono text-muted-foreground/35 w-7 tabular-nums">{fmt(song.duration)}</span>
         </div>
 
-        {/* Controls row */}
+        {/* Controls */}
         <div className="flex items-center justify-between">
 
-          {/* BPM — drag to change */}
+          {/* BPM drag */}
           <div
-            className="flex flex-col items-center w-16 cursor-ns-resize select-none touch-none"
+            className="flex flex-col items-center w-14 cursor-ns-resize select-none touch-none"
             {...tempoDrag}
             data-testid="drag-tempo"
           >
-            <span className="text-base font-bold tabular-nums leading-tight">{bpmDisplay}</span>
-            <span className="text-[9px] text-muted-foreground/50 tracking-widest uppercase mt-0.5">BPM</span>
+            <span className="text-base font-bold tabular-nums leading-none">{bpmDisplay}</span>
+            <span className="text-[9px] text-muted-foreground/45 tracking-widest uppercase mt-0.5">BPM</span>
             {tempo !== 1 && (
               <button
-                className="text-[8px] text-muted-foreground/40 hover:text-muted-foreground mt-0.5 transition-colors"
+                className="mt-0.5 text-muted-foreground/40 hover:text-muted-foreground transition-colors"
                 onPointerDown={e => e.stopPropagation()}
                 onClick={() => setTempo(1)}
                 data-testid="btn-tempo-reset"
@@ -563,23 +558,14 @@ export function PlayerPage() {
             )}
           </div>
 
-          {/* Playback buttons */}
+          {/* Playback */}
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => { setTime(t => Math.max(0, t - 10)); resetIdle(); }}
-              className="text-muted-foreground hover:text-foreground transition-colors"
-              data-testid="btn-rw"
-            >
+            <button onClick={() => { setTime(t => Math.max(0, t - 10)); resetIdle(); }} className="text-muted-foreground hover:text-foreground transition-colors" data-testid="btn-rw">
               <ChevronsLeft className="w-5 h-5" />
             </button>
-            <button
-              onClick={() => { setTime(0); resetIdle(); }}
-              className="text-muted-foreground hover:text-foreground transition-colors"
-              data-testid="btn-skip-back"
-            >
+            <button onClick={() => { setTime(0); resetIdle(); }} className="text-muted-foreground hover:text-foreground transition-colors" data-testid="btn-skip-back">
               <SkipBack className="w-5 h-5" />
             </button>
-
             <motion.button
               whileTap={{ scale: 0.91 }}
               onClick={() => { setPlaying(p => !p); resetIdle(); }}
@@ -593,30 +579,25 @@ export function PlayerPage() {
                 }
               </AnimatePresence>
             </motion.button>
-
             <button className="text-muted-foreground hover:text-foreground transition-colors" data-testid="btn-skip-fwd">
               <SkipForward className="w-5 h-5" />
             </button>
-            <button
-              onClick={() => { setTime(t => Math.min(song.duration, t + 10)); resetIdle(); }}
-              className="text-muted-foreground hover:text-foreground transition-colors"
-              data-testid="btn-ff"
-            >
+            <button onClick={() => { setTime(t => Math.min(song.duration, t + 10)); resetIdle(); }} className="text-muted-foreground hover:text-foreground transition-colors" data-testid="btn-ff">
               <ChevronsRight className="w-5 h-5" />
             </button>
           </div>
 
-          {/* KEY — drag to change */}
+          {/* KEY drag */}
           <div
-            className="flex flex-col items-center w-16 cursor-ns-resize select-none touch-none"
+            className="flex flex-col items-center w-14 cursor-ns-resize select-none touch-none"
             {...keyDrag}
             data-testid="drag-key"
           >
-            <span className="text-base font-bold text-primary leading-tight">{keyDisplay}</span>
-            <span className="text-[9px] text-muted-foreground/50 tracking-widest uppercase mt-0.5">KEY</span>
+            <span className="text-base font-bold text-primary leading-none">{keyDisplay}</span>
+            <span className="text-[9px] text-muted-foreground/45 tracking-widest uppercase mt-0.5">KEY</span>
             {semitones !== 0 && (
               <button
-                className="text-[8px] text-muted-foreground/40 hover:text-muted-foreground mt-0.5 transition-colors"
+                className="mt-0.5 text-muted-foreground/40 hover:text-muted-foreground transition-colors"
                 onPointerDown={e => e.stopPropagation()}
                 onClick={() => setSemitones(0)}
                 data-testid="btn-key-reset"

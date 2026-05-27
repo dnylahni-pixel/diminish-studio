@@ -1,85 +1,173 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Music, Library, GraduationCap, Upload, User, Menu } from "lucide-react";
+import { Music, Library, GraduationCap, Upload, User, Menu, Sun, Moon, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/hooks/use-theme";
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
+  const [collapsed, setCollapsed] = useState(false);
+  const { toggle, isDark } = useTheme();
 
   const navItems = [
     { href: "/library", label: "Library", icon: Library },
-    { href: "/learn", label: "Learn", icon: GraduationCap },
+    { href: "/learn",   label: "Learn",   icon: GraduationCap },
     { href: "/process", label: "Process", icon: Upload },
     { href: "/profile", label: "Profile", icon: User },
   ];
 
-  const SidebarContent = () => (
-    <div className="flex h-full flex-col bg-sidebar border-r border-sidebar-border text-sidebar-foreground w-64 p-4 gap-6">
-      <div className="flex items-center gap-2 px-2">
-        <div className="bg-primary/20 p-2 rounded-lg text-primary">
-          <Music className="w-6 h-6" />
-        </div>
-        <h1 className="text-xl font-bold tracking-tight">DiminishStudio</h1>
-      </div>
-      
-      <nav className="flex flex-col gap-2 flex-1">
-        {navItems.map((item) => {
-          const isActive = location.startsWith(item.href);
-          return (
-            <Link 
-              key={item.href} 
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200 text-sm font-medium",
-                isActive 
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm" 
-                  : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
-              )}
-            >
-              <item.icon className="w-4 h-4" />
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
-      
-      <div className="mt-auto pt-4 border-t border-sidebar-border px-2">
-        <p className="text-xs text-sidebar-foreground/50 text-center">
-          DiminishStudio v1.0.0
-        </p>
-      </div>
-    </div>
-  );
-
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden selection:bg-primary/30">
-      {/* Desktop Sidebar */}
-      <div className="hidden md:block">
-        <SidebarContent />
-      </div>
 
-      {/* Mobile Header & Sidebar */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-14 border-b border-border bg-background/80 backdrop-blur-md z-50 flex items-center justify-between px-4">
+      {/* ── Desktop Sidebar ──────────────────────────────────────────────── */}
+      <aside
+        className={cn(
+          "hidden md:flex flex-col h-full bg-sidebar border-r border-sidebar-border text-sidebar-foreground transition-all duration-300 overflow-hidden flex-shrink-0",
+          collapsed ? "w-14" : "w-56"
+        )}
+      >
+        {/* Logo */}
+        <div className={cn(
+          "flex items-center gap-2 h-14 px-3 border-b border-sidebar-border flex-shrink-0",
+          collapsed ? "justify-center" : "justify-between"
+        )}>
+          {!collapsed && (
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="bg-primary/20 p-1.5 rounded-lg text-primary flex-shrink-0">
+                <Music className="w-4 h-4" />
+              </div>
+              <span className="font-bold text-sm tracking-tight truncate">DiminishStudio</span>
+            </div>
+          )}
+          {collapsed && (
+            <div className="bg-primary/20 p-1.5 rounded-lg text-primary">
+              <Music className="w-4 h-4" />
+            </div>
+          )}
+          <button
+            onClick={() => setCollapsed(p => !p)}
+            className={cn(
+              "text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors flex-shrink-0",
+              collapsed && "hidden"
+            )}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <PanelLeftClose className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Expand button when collapsed */}
+        {collapsed && (
+          <button
+            onClick={() => setCollapsed(false)}
+            className="mx-auto mt-2 text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors p-1.5"
+            title="Expand sidebar"
+          >
+            <PanelLeftOpen className="w-4 h-4" />
+          </button>
+        )}
+
+        {/* Nav */}
+        <nav className="flex flex-col gap-1 flex-1 px-2 py-3">
+          {navItems.map((item) => {
+            const isActive = location.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                title={collapsed ? item.label : undefined}
+                className={cn(
+                  "flex items-center gap-3 px-2.5 py-2 rounded-md transition-all duration-200 text-sm font-medium",
+                  collapsed ? "justify-center" : "",
+                  isActive
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                    : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+                )}
+              >
+                <item.icon className="w-4 h-4 flex-shrink-0" />
+                {!collapsed && <span>{item.label}</span>}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Bottom: theme toggle */}
+        <div className={cn(
+          "flex-shrink-0 px-2 py-3 border-t border-sidebar-border",
+          collapsed ? "flex justify-center" : "flex items-center justify-between px-3"
+        )}>
+          {!collapsed && (
+            <span className="text-[10px] text-sidebar-foreground/40 tracking-widest uppercase">
+              v1.0.0
+            </span>
+          )}
+          <button
+            onClick={toggle}
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            className="text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors p-1.5 rounded-md hover:bg-sidebar-accent/40"
+          >
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+        </div>
+      </aside>
+
+      {/* ── Mobile Header ────────────────────────────────────────────────── */}
+      <div className="md:hidden fixed top-0 left-0 right-0 h-14 border-b border-border bg-background/90 backdrop-blur-md z-50 flex items-center justify-between px-4">
         <div className="flex items-center gap-2 text-primary">
           <Music className="w-5 h-5" />
-          <span className="font-bold">DiminishStudio</span>
+          <span className="font-bold text-sm">DiminishStudio</span>
         </div>
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="text-foreground">
-              <Menu className="w-5 h-5" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="p-0 w-64 border-r-border bg-sidebar">
-            <SidebarContent />
-          </SheetContent>
-        </Sheet>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggle}
+            className="text-foreground/60 hover:text-foreground transition-colors p-1.5"
+          >
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="text-foreground">
+                <Menu className="w-5 h-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 w-56 border-r-border bg-sidebar">
+              <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground p-4 gap-5">
+                <div className="flex items-center gap-2 px-1">
+                  <div className="bg-primary/20 p-1.5 rounded-lg text-primary">
+                    <Music className="w-4 h-4" />
+                  </div>
+                  <span className="font-bold text-sm tracking-tight">DiminishStudio</span>
+                </div>
+                <nav className="flex flex-col gap-1">
+                  {navItems.map((item) => {
+                    const isActive = location.startsWith(item.href);
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={cn(
+                          "flex items-center gap-3 px-3 py-2.5 rounded-md transition-all text-sm font-medium",
+                          isActive
+                            ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                            : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+                        )}
+                      >
+                        <item.icon className="w-4 h-4" />
+                        {item.label}
+                      </Link>
+                    );
+                  })}
+                </nav>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
 
-      {/* Main Content Area */}
-      <main className="flex-1 h-full overflow-y-auto relative md:pt-0 pt-14">
+      {/* ── Main Content ─────────────────────────────────────────────────── */}
+      <main className="flex-1 h-full overflow-y-auto relative md:pt-0 pt-14 min-w-0">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,var(--color-primary)_0%,transparent_40%)] opacity-5 pointer-events-none" />
         {children}
       </main>
