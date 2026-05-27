@@ -42,8 +42,7 @@ function shiftKey(key: string, n: number) {
 // ─── Constants ────────────────────────────────────────────────────────────────
 const BEAT_W  = 56;
 const HEAD_X  = 160;
-// Timeline row height — tall enough for 70-80% font fill
-const TL_H    = 52;
+const TL_H    = 44;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface LyricLine  { time: number; text: string; chords: string[] }
@@ -268,15 +267,15 @@ export function PlayerPage() {
       {/* ── Chord Timeline ──────────────────────────────────────────────── */}
       <div
         className="flex-shrink-0 relative border-b border-border/40"
-        style={{ height: TL_H + 16 }}   /* beat row + measure-number row below */
+        style={{ height: TL_H }}
         data-testid="chord-timeline"
       >
-        {/* Playhead dot only — no vertical line */}
+        {/* Playhead dot only */}
         <div
           className="absolute z-20 pointer-events-none"
-          style={{ left: HEAD_X, bottom: 16, transform: "translateX(-50%)" }}
+          style={{ left: HEAD_X, bottom: 3, transform: "translateX(-50%)" }}
         >
-          <div className="w-2 h-2 rounded-full bg-primary" />
+          <div className="w-1.5 h-1.5 rounded-full bg-primary" />
         </div>
 
         {/* Scroll container */}
@@ -285,71 +284,50 @@ export function PlayerPage() {
           className="overflow-x-auto overflow-y-hidden h-full"
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
-          <div style={{ width: totalW, height: "100%", display: "flex", flexDirection: "column" }}>
+          <div style={{ width: totalW, height: TL_H, display: "flex", flexDirection: "row" }}>
+            {Array.from({ length: totalBeats }, (_, bi) => {
+              const isDownbeat = bi % 4 === 0;
+              const chord      = beatToChord[bi] ?? "";
+              const prevChord  = bi > 0 ? (beatToChord[bi - 1] ?? "") : null;
+              const showLabel  = chord !== prevChord || bi === 0;
+              const isActive   = bi === currentBeat;
+              const label      = showLabel ? shiftChord(chord, semitones) : "";
 
-            {/* Beat blocks row */}
-            <div className="flex flex-row flex-shrink-0" style={{ height: TL_H }}>
-              {Array.from({ length: totalBeats }, (_, bi) => {
-                const isDownbeat   = bi % 4 === 0;
-                const chord        = beatToChord[bi] ?? "";
-                const prevChord    = bi > 0 ? (beatToChord[bi - 1] ?? "") : null;
-                const showLabel    = chord !== prevChord || bi === 0;
-                const isActive     = bi === currentBeat;
-                const label        = showLabel ? shiftChord(chord, semitones) : "";
-
-                return (
-                  <div
-                    key={bi}
-                    className={cn(
-                      "flex-shrink-0 flex items-center justify-center relative",
-                      isActive
-                        ? "bg-primary/12 dark:bg-primary/18"
-                        : "bg-muted/15 hover:bg-muted/30"
-                    )}
-                    style={{ width: BEAT_W, height: TL_H }}
-                    data-testid={`beat-${bi}`}
-                  >
-                    {/* Left border */}
-                    <div
-                      className="absolute left-0 top-0 bottom-0"
-                      style={{
-                        width: isDownbeat ? 2 : 1,
-                        background: isDownbeat
-                          ? "hsl(var(--foreground) / 0.35)"
-                          : "hsl(var(--foreground) / 0.14)",
-                      }}
-                    />
-                    {/* Chord label — big, fills ~75% of block height */}
-                    {label && (
-                      <span
-                        className={cn(
-                          "font-mono font-bold select-none tracking-tight leading-none truncate px-0.5",
-                          isActive ? "text-primary" : "text-foreground/60",
-                        )}
-                        style={{ fontSize: Math.round(TL_H * 0.42) }}
-                      >
-                        {label}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Measure numbers row — below blocks */}
-            <div className="flex flex-row flex-shrink-0 relative" style={{ height: 16 }}>
-              {Array.from({ length: Math.ceil(totalBeats / 4) }, (_, mi) => (
+              return (
                 <div
-                  key={mi}
-                  className="absolute flex items-center"
-                  style={{ left: mi * 4 * BEAT_W, width: 4 * BEAT_W, height: 16 }}
+                  key={bi}
+                  className={cn(
+                    "flex-shrink-0 flex items-center justify-center relative",
+                    isActive
+                      ? "bg-primary/10 dark:bg-primary/15"
+                      : "bg-muted/15 hover:bg-muted/25"
+                  )}
+                  style={{ width: BEAT_W, height: TL_H }}
+                  data-testid={`beat-${bi}`}
                 >
-                  <span className="text-[9px] font-mono text-muted-foreground/35 select-none pl-1 tracking-widest">
-                    {mi + 1}
-                  </span>
+                  {/* Left border — downbeat slightly thicker, beat very thin */}
+                  <div
+                    className="absolute left-0 top-0 bottom-0"
+                    style={{
+                      width: isDownbeat ? "1.5px" : "0.5px",
+                      background: isDownbeat
+                        ? "hsl(var(--foreground) / 0.22)"
+                        : "hsl(var(--foreground) / 0.10)",
+                    }}
+                  />
+                  {label && (
+                    <span
+                      className={cn(
+                        "font-mono font-semibold select-none tracking-tight leading-none truncate px-1 text-[11px]",
+                        isActive ? "text-primary" : "text-foreground/55",
+                      )}
+                    >
+                      {label}
+                    </span>
+                  )}
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
         </div>
 
