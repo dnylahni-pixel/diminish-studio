@@ -42,7 +42,7 @@ function shiftKey(key: string, n: number) {
 // ─── Constants ────────────────────────────────────────────────────────────────
 const BEAT_W  = 56;
 const HEAD_X  = 160;
-const TL_H    = 44;
+const TL_H    = 56;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface LyricLine  { time: number; text: string; chords: string[] }
@@ -318,7 +318,7 @@ export function PlayerPage() {
                   {label && (
                     <span
                       className={cn(
-                        "font-mono font-semibold select-none tracking-tight leading-none truncate px-1 text-[11px]",
+                        "font-mono font-semibold select-none tracking-tight leading-none truncate px-1 text-[13px]",
                         isActive ? "text-primary" : "text-foreground/55",
                       )}
                     >
