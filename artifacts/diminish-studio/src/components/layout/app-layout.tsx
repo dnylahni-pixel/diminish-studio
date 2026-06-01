@@ -119,11 +119,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
         className="md:hidden fixed top-0 left-0 right-0 border-b border-border bg-background/90 backdrop-blur-md z-50 flex items-end justify-between px-4 pb-2"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.5rem)" }}
       >
-        {/* Logo icon only — no text */}
-        <div className="bg-primary/20 p-1.5 rounded-lg text-primary">
-          <Music className="w-4 h-4" />
-        </div>
-
         <div className="flex items-center gap-1">
           <button
             onClick={toggle}
