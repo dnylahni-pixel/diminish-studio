@@ -9,6 +9,7 @@ import { useTheme } from "@/hooks/use-theme";
 export function AppLayout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const { toggle, isDark } = useTheme();
 
   const navItems = [
@@ -118,18 +119,19 @@ export function AppLayout({ children }: { children: ReactNode }) {
         className="md:hidden fixed top-0 left-0 right-0 border-b border-border bg-background/90 backdrop-blur-md z-50 flex items-end justify-between px-4 pb-2"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.5rem)" }}
       >
-        <div className="flex items-center gap-2 text-primary">
-          <Music className="w-5 h-5" />
-          <span className="font-bold text-sm">DiminishStudio</span>
+        {/* Logo icon only — no text */}
+        <div className="bg-primary/20 p-1.5 rounded-lg text-primary">
+          <Music className="w-4 h-4" />
         </div>
-        <div className="flex items-center gap-2">
+
+        <div className="flex items-center gap-1">
           <button
             onClick={toggle}
             className="text-foreground/60 hover:text-foreground transition-colors p-1.5"
           >
             {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
-          <Sheet>
+          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="text-foreground">
                 <Menu className="w-5 h-5" />
@@ -150,6 +152,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                       <Link
                         key={item.href}
                         href={item.href}
+                        onClick={() => setSheetOpen(false)}
                         className={cn(
                           "flex items-center gap-3 px-3 py-2.5 rounded-md transition-all text-sm font-medium",
                           isActive
