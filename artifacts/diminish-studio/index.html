@@ -1,21 +1,45 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fa">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- PWA core -->
+    <meta name="application-name" content="DiminishStudio" />
+    <meta name="theme-color" content="#0e1520" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f5f6f8" media="(prefers-color-scheme: light)" />
+
+    <!-- iOS / Safari PWA -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="DiminishStudio" />
+    <link rel="apple-touch-icon" href="/icon.svg" />
+    <link rel="apple-touch-startup-image" href="/icon.svg" />
+
+    <!-- Windows / Edge -->
+    <meta name="msapplication-TileColor" content="#0e1520" />
+    <meta name="msapplication-TileImage" content="/icon.svg" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- Disable auto-detection -->
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- SEO / Social -->
     <title>DiminishStudio</title>
-    <meta name="description" content="DiminishStudio — built on Replit. Update this description to reflect the app." />
-    <meta name="robots" content="index, follow" />
+    <meta name="description" content="یادگیری حرفه‌ای موسیقی — تحلیل اکورد، متن آهنگ، میکسر حرفه‌ای" />
     <meta property="og:title" content="DiminishStudio" />
-    <meta property="og:description" content="DiminishStudio — built on Replit. Update this description to reflect the app." />
+    <meta property="og:description" content="Professional music learning and chord analysis" />
     <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="DiminishStudio" />
-    <meta name="twitter:description" content="DiminishStudio — built on Replit. Update this description to reflect the app." />
+    <meta property="og:image" content="/icon.svg" />
+
+    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="shortcut icon" href="/favicon.svg" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   </head>
   <body>
     <div id="root"></div>

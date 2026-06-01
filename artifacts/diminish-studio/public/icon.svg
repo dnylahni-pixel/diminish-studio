@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#0d1117"/>
+  <circle cx="256" cy="256" r="240" fill="#0e1520"/>
+  <!-- Music note shape -->
+  <path d="M320 140 L320 310 C311 302 298 296 282 296 C255 296 234 312 234 332 C234 352 255 368 282 368 C309 368 330 352 330 332 L330 180 L380 164 L380 120 Z" fill="#00b5cc"/>
+  <!-- Staff lines -->
+  <rect x="140" y="200" width="100" height="3" rx="1.5" fill="#00b5cc" opacity="0.4"/>
+  <rect x="140" y="216" width="100" height="3" rx="1.5" fill="#00b5cc" opacity="0.4"/>
+  <rect x="140" y="232" width="100" height="3" rx="1.5" fill="#00b5cc" opacity="0.4"/>
+  <rect x="140" y="248" width="70" height="3" rx="1.5" fill="#00b5cc" opacity="0.4"/>
+</svg>
