@@ -241,11 +241,6 @@ export function PlayerPage() {
         style={{ pointerEvents: uiVisible ? "auto" : "none" }}
       >
         <div className="flex items-center gap-2.5 flex-1 min-w-0">
-          <div className="w-9 h-9 rounded-lg bg-muted/70 border border-border/40 flex items-center justify-center flex-shrink-0">
-            <svg className="w-4 h-4 text-muted-foreground" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z"/>
-            </svg>
-          </div>
           <div className="min-w-0">
             <p className="font-semibold text-sm truncate leading-tight">{song.title}</p>
             <p className="text-xs text-muted-foreground/60 truncate">{song.artist}</p>
@@ -349,48 +344,60 @@ export function PlayerPage() {
           ) : lyrics.map((line, i) => {
             const isActive = i === activeLi;
             const isPast   = i < activeLi;
+
+            // ── karaoke word highlight ──────────────────────────────────
+            const lineDuration = lyrics[i + 1] ? lyrics[i + 1].time - line.time : 4;
+            const lineProgress = isActive
+              ? Math.min(1, Math.max(0, (time - line.time) / lineDuration))
+              : 0;
+            const words = line.text.split(/(\s+)/);          // keep spaces as tokens
+            const wordTokens = words.filter(w => w.trim());   // non-space words
+            const totalWords = wordTokens.length;
+
+            // which "word slot" is currently active (0-indexed among real words)
+            const activeWordIdx = Math.floor(lineProgress * totalWords);
+
+            let wordSlot = 0; // counter for real (non-space) words
+
             return (
-              <div key={i} data-li={i} data-testid={`lyric-${i}`} className="py-2.5">
-                {line.chords?.length > 0 && (
-                  <div className="flex gap-1.5 mb-1">
-                    {line.chords.map((c, j) => (
-                      <span
-                        key={j}
-                        className={cn(
-                          "text-[10px] font-mono font-bold px-1.5 py-0.5 rounded transition-all duration-300",
-                          isActive
-                            ? "text-primary bg-primary/10 border border-primary/20"
-                            : "text-muted-foreground/40 bg-transparent border border-border/20"
-                        )}
-                      >
-                        {shiftChord(c, semitones)}
-                      </span>
-                    ))}
-                  </div>
-                )}
+              <div key={i} data-li={i} data-testid={`lyric-${i}`} className="py-3">
                 <p
                   className={cn(
                     "leading-snug font-medium transition-all duration-500",
-                    isActive ? "text-foreground text-[1.35rem]" :
+                    isActive ? "text-[1.35rem]" :
                     isPast   ? "text-muted-foreground/30 text-xl" :
                                "text-muted-foreground/50 text-xl"
                   )}
                   dir="auto"
                 >
-                  {line.text}
+                  {isActive ? (
+                    // word-by-word karaoke
+                    words.map((token, ti) => {
+                      if (!token.trim()) {
+                        // space token — render as-is
+                        return <span key={ti}>{token}</span>;
+                      }
+                      const slot = wordSlot++;
+                      const isPastWord    = slot < activeWordIdx;
+                      const isCurrentWord = slot === activeWordIdx;
+                      return (
+                        <span
+                          key={ti}
+                          className={cn(
+                            "transition-colors duration-150",
+                            isPastWord    ? "text-foreground" :
+                            isCurrentWord ? "text-primary font-semibold" :
+                                            "text-foreground/25"
+                          )}
+                        >
+                          {token}
+                        </span>
+                      );
+                    })
+                  ) : (
+                    line.text
+                  )}
                 </p>
-                {isActive && (
-                  <motion.div
-                    className="mt-1.5 h-px bg-primary/40 rounded-full origin-left"
-                    initial={{ scaleX: 0 }}
-                    animate={{ scaleX: 1 }}
-                    key={`ul-${i}`}
-                    transition={{
-                      duration: lyrics[i+1] ? lyrics[i+1].time - line.time : 4,
-                      ease: "linear",
-                    }}
-                  />
-                )}
               </div>
             );
           })}
