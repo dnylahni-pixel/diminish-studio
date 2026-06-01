@@ -19,7 +19,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   ];
 
   return (
-    <div className="flex h-screen w-full bg-background overflow-hidden selection:bg-primary/30">
+    <div className="flex w-full bg-background overflow-hidden selection:bg-primary/30" style={{ height: "100dvh" }}>
 
       {/* ── Desktop Sidebar ──────────────────────────────────────────────── */}
       <aside
@@ -114,7 +114,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
       </aside>
 
       {/* ── Mobile Header ────────────────────────────────────────────────── */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-14 border-b border-border bg-background/90 backdrop-blur-md z-50 flex items-center justify-between px-4">
+      <div
+        className="md:hidden fixed top-0 left-0 right-0 border-b border-border bg-background/90 backdrop-blur-md z-50 flex items-end justify-between px-4 pb-2"
+        style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.5rem)" }}
+      >
         <div className="flex items-center gap-2 text-primary">
           <Music className="w-5 h-5" />
           <span className="font-bold text-sm">DiminishStudio</span>
@@ -167,7 +170,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
       </div>
 
       {/* ── Main Content ─────────────────────────────────────────────────── */}
-      <main className="flex-1 h-full overflow-y-auto relative md:pt-0 pt-14 min-w-0">
+      <main
+        className="flex-1 h-full overflow-y-auto relative md:pt-0 min-w-0"
+        style={{ paddingTop: "max(3.5rem, calc(env(safe-area-inset-top) + 2.5rem))" }}
+      >
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,var(--color-primary)_0%,transparent_40%)] opacity-5 pointer-events-none" />
         {children}
       </main>

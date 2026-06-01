@@ -487,8 +487,8 @@ export function PlayerPage() {
       <motion.div
         animate={{ opacity: uiVisible ? 1 : 0, y: uiVisible ? 0 : 6 }}
         transition={{ duration: 0.35 }}
-        className="flex-shrink-0 border-t border-border/40 bg-card/20 px-4 pt-2.5 pb-3 flex flex-col gap-2.5"
-        style={{ pointerEvents: uiVisible ? "auto" : "none" }}
+        className="flex-shrink-0 border-t border-border/40 bg-card/20 px-4 pt-2.5 flex flex-col gap-2.5"
+        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))", pointerEvents: uiVisible ? "auto" : "none" }}
         data-testid="transport"
       >
         {/* Progress — thin custom bar */}
