@@ -1,8 +1,0 @@
-uploads = []
-outputs = []
-
-[[generated]]
-id = "xJJhE789-7hgvjowOVgs2"
-uri = "file://artifacts/diminish-studio/public/hero-bg.png"
-type = "image"
-title = "Studio mixing console and waveform"
