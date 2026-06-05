@@ -1,3 +1,4 @@
+import { clerkMiddleware } from "@clerk/express";
 import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
@@ -28,6 +29,8 @@ app.use(
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.use(clerkMiddleware());
 
 app.use("/api", router);
 
