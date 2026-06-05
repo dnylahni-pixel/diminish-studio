@@ -1,5 +1,16 @@
+declare global {
+  namespace Express {
+    interface Request {
+      auth?: {
+        userId: string;
+        sessionId: string;
+      };
+    }
+  }
+}
+
 import { Router } from "express";
-import { requireAuth } from "@clerk/express";
+import { getAuth } from "@clerk/express";
 import { createClerkClient } from "@clerk/backend";
 import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db";
@@ -40,11 +51,11 @@ function serializeUser(user: typeof usersTable.$inferSelect) {
   };
 }
 
-router.get("/me", requireAuth(), async (req, res) => {
+router.get("/me", async (req, res) => {
   try {
-    const clerkUserId = req.auth?.userId;
-    if (!clerkUserId) return res.status(401).json({ error: "Unauthorized" });
-    const user = await getOrCreateUser(clerkUserId);
+    const { userId } = getAuth(req);
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+    const user = await getOrCreateUser(userId);
     return res.json(serializeUser(user));
   } catch (e) {
     console.error(e);
@@ -52,11 +63,11 @@ router.get("/me", requireAuth(), async (req, res) => {
   }
 });
 
-router.patch("/me", requireAuth(), async (req, res) => {
+router.patch("/me", async (req, res) => {
   try {
-    const clerkUserId = req.auth?.userId;
-    if (!clerkUserId) return res.status(401).json({ error: "Unauthorized" });
-    const user = await getOrCreateUser(clerkUserId);
+    const { userId } = getAuth(req);
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+    const user = await getOrCreateUser(userId);
     const { username, bio, preferredInstrument } = req.body;
     const [updated] = await db.update(usersTable).set({ username, bio, preferredInstrument }).where(eq(usersTable.id, user.id)).returning();
     return res.json(serializeUser(updated));

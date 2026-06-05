@@ -7,7 +7,7 @@ export function LoginPage() {
         path="/login"
         routing="path"
         signUpUrl="/register"
-        redirectUrl="/library"
+        fallbackRedirectUrl="/library"
       />
     </div>
   );
