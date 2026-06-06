@@ -37,7 +37,6 @@ function Router() {
     <Switch>
       <Route path="/" component={HomePage} />
 
-      {/* Clerk auth routes */}
       <Route path="/login" component={LoginPage} />
       <Route path="/login/:rest*" component={LoginPage} />
 
