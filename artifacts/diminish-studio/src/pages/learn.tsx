@@ -36,7 +36,7 @@ export function LearnPage() {
           {isLoading ? (
             [...Array(8)].map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)
           ) : (
-            chords?.filter(c => c.name.toLowerCase().includes(search.toLowerCase())).map((chord) => (
+            (Array.isArray(chords) ? chords : []).filter(c => c.name.toLowerCase().includes(search.toLowerCase())).map((chord) => (
               <button
                 key={chord.id}
                 onClick={() => setSelectedChord(chord.name)}
@@ -96,7 +96,7 @@ export function LearnPage() {
                     ))}
                   </div>
                   {/* Fingers */}
-                  {chordDetail.fingers.map((fret, i) => fret > 0 && (
+                  {(Array.isArray(chordDetail.fingers) ? chordDetail.fingers : []).map((fret, i) => fret > 0 && (
                     <div 
                       key={i} 
                       className="absolute w-6 h-6 rounded-full bg-primary z-20 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center text-xs font-bold text-primary-foreground"
