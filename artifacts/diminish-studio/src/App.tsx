@@ -27,7 +27,33 @@ function AuthSetup() {
       const token = await getToken();
       return token;
     });
-  }, [getToken]);
+  }, [getToken]);function Router() {
+  return (
+    <Switch>
+      <Route path="/" component={HomePage} />
+      <Route path="/login" component={LoginPage} />
+      <Route path="/register" component={RegisterPage} />
+      
+      <Route path="/library">
+        <AppLayout><LibraryPage /></AppLayout>
+      </Route>
+      <Route path="/songs/:id">
+        <AppLayout><PlayerPage /></AppLayout>
+      </Route>
+      <Route path="/learn">
+        <AppLayout><LearnPage /></AppLayout>
+      </Route>
+      <Route path="/process">
+        <AppLayout><ProcessPage /></AppLayout>
+      </Route>
+      <Route path="/profile">
+        <AppLayout><ProfilePage /></AppLayout>
+      </Route>
+      
+      <Route component={NotFound} />
+    </Switch>
+  );
+}
 
   return null;
 }
@@ -36,8 +62,8 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={HomePage} />
-      <Route path="/login" component={LoginPage} />
-      <Route path="/register" component={RegisterPage} />
+      <Route path="/login/:rest*" component={LoginPage} />
+      <Route path="/register/:rest*" component={RegisterPage} />
       
       <Route path="/library">
         <AppLayout><LibraryPage /></AppLayout>
