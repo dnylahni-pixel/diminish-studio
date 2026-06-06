@@ -27,33 +27,7 @@ function AuthSetup() {
       const token = await getToken();
       return token;
     });
-  }, [getToken]);function Router() {
-  return (
-    <Switch>
-      <Route path="/" component={HomePage} />
-      <Route path="/login" component={LoginPage} />
-      <Route path="/register" component={RegisterPage} />
-      
-      <Route path="/library">
-        <AppLayout><LibraryPage /></AppLayout>
-      </Route>
-      <Route path="/songs/:id">
-        <AppLayout><PlayerPage /></AppLayout>
-      </Route>
-      <Route path="/learn">
-        <AppLayout><LearnPage /></AppLayout>
-      </Route>
-      <Route path="/process">
-        <AppLayout><ProcessPage /></AppLayout>
-      </Route>
-      <Route path="/profile">
-        <AppLayout><ProfilePage /></AppLayout>
-      </Route>
-      
-      <Route component={NotFound} />
-    </Switch>
-  );
-}
+  }, [getToken]);
 
   return null;
 }
@@ -62,25 +36,44 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={HomePage} />
+
+      {/* Clerk auth routes */}
+      <Route path="/login" component={LoginPage} />
       <Route path="/login/:rest*" component={LoginPage} />
+
+      <Route path="/register" component={RegisterPage} />
       <Route path="/register/:rest*" component={RegisterPage} />
-      
+
       <Route path="/library">
-        <AppLayout><LibraryPage /></AppLayout>
+        <AppLayout>
+          <LibraryPage />
+        </AppLayout>
       </Route>
+
       <Route path="/songs/:id">
-        <AppLayout><PlayerPage /></AppLayout>
+        <AppLayout>
+          <PlayerPage />
+        </AppLayout>
       </Route>
+
       <Route path="/learn">
-        <AppLayout><LearnPage /></AppLayout>
+        <AppLayout>
+          <LearnPage />
+        </AppLayout>
       </Route>
+
       <Route path="/process">
-        <AppLayout><ProcessPage /></AppLayout>
+        <AppLayout>
+          <ProcessPage />
+        </AppLayout>
       </Route>
+
       <Route path="/profile">
-        <AppLayout><ProfilePage /></AppLayout>
+        <AppLayout>
+          <ProfilePage />
+        </AppLayout>
       </Route>
-      
+
       <Route component={NotFound} />
     </Switch>
   );
