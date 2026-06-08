@@ -1,5 +1,5 @@
 import { pgTable, integer, text, timestamp } from "drizzle-orm/pg-core";
-import { songsTable } from "./songs";
+import { songs } from "./songs";
 
 export const songStems = pgTable("song_stems", {
   songId: integer("song_id")
