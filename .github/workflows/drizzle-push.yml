@@ -25,4 +25,4 @@ jobs:
       - name: Push schema
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: pnpm exec drizzle-kit push --config=lib/db/drizzle.config.ts
+        run: pnpm exec drizzle-kit push --config=lib/db/drizzle.config.ts --force
