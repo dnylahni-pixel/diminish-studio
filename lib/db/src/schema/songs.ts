@@ -9,7 +9,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { artists } from "./artists";
 
-export const songsTable = pgTable("songs", {
+export const songs = pgTable("songs", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
 
