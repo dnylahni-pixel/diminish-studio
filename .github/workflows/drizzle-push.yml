@@ -6,22 +6,21 @@ on:
 jobs:
   push-schema:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Enable Corepack
-        run: corepack enable
+      - run: corepack enable
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile --config.dangerouslyAllowAllBuilds=true
+      - name: Install base deps
+        run: pnpm install --no-frozen-lockfile --config.dangerouslyAllowAllBuilds=true
+
+      - name: Install drizzle packages
+        run: pnpm add -D drizzle-kit && pnpm add drizzle-orm
 
       - name: Push schema
         env:
