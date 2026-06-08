@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { songsTable, processingJobsTable } from "@workspace/db";
+import { songs } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
@@ -30,6 +30,7 @@ router.get("/featured", async (req, res) => {
   }
 });
 
+/*
 router.get("/process/:jobId", async (req, res) => {
   try {
     const { jobId } = req.params;
@@ -90,6 +91,8 @@ router.post("/process", async (req, res) => {
     res.status(500).json({ error: "Failed to start processing" });
   }
 });
+
+*/
 
 router.get("/:id", async (req, res) => {
   try {
