@@ -25,7 +25,6 @@ jobs:
         run: pnpm install --frozen-lockfile --config.dangerouslyAllowAllBuilds=true
 
       - name: Push Drizzle schema to Neon
-        working-directory: artifacts/api-server
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: pnpm dlx drizzle-kit push --config=lib/db/drizzle.config.ts
+        run: pnpm dlx drizzle-kit push --config=artifacts/api-server/lib/db/drizzle.config.ts
