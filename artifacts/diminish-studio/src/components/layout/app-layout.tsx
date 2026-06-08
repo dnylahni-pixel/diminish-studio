@@ -1,6 +1,6 @@
 import { ReactNode, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Music, GraduationCap, Upload, User, Menu, Sun, Moon, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Music, Library, GraduationCap, Upload, User, Menu, Sun, Moon, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -12,12 +12,13 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const { toggle, isDark } = useTheme();
 
-  const navItems = [
-    { href: "/library", label: "Music Hub", icon: Music },
-    { href: "/learn",   label: "Learn",   icon: GraduationCap },
-    { href: "/process", label: "Process", icon: Upload },
-    { href: "/profile", label: "Profile", icon: User },
-  ];
+const navItems = [
+  { href: "/", label: "Music Hub", icon: Music },
+  { href: "/library", label: "Library", icon: Library },
+  { href: "/learn", label: "Learn", icon: GraduationCap },
+  { href: "/process", label: "Process", icon: Upload },
+  { href: "/profile", label: "Profile", icon: User },
+];
 
   return (
     <div className="flex w-full bg-background overflow-hidden selection:bg-primary/30" style={{ height: "100dvh" }}>
