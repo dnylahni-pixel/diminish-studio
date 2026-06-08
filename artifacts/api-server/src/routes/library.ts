@@ -12,7 +12,7 @@ declare global {
 import { Router } from "express";
 import { getAuth } from "@clerk/express";
 import { db } from "@workspace/db";
-import { libraryTable, songsTable, usersTable } from "@workspace/db";
+import { libraryTable, songs, usersTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 
 const router = Router();
