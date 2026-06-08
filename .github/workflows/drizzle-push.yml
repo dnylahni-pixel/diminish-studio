@@ -5,26 +5,21 @@ on:
 
 jobs:
   push-schema:
-    name: Push schema to Neon
     runs-on: ubuntu-latest
-    timeout-minutes: 15
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Enable Corepack
-        run: corepack enable
+      - run: corepack enable
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --config.dangerouslyAllowAllBuilds=true
 
-      - name: Push Drizzle schema to Neon
+      - name: Push schema
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: pnpm dlx drizzle-kit push --config=artifacts/api-server/lib/db/drizzle.config.ts
+        run: pnpm dlx drizzle-kit push --config=lib/db/drizzle.config.ts
