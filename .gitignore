@@ -1,49 +1,177 @@
-# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# compiled output
-dist
-tmp
-out-tsc
+# Build outputs
+dist/
+build/
+.next/
+.nuxt/
+public/dist/
+out/
+
+# Environment variables
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Coverage
+coverage/
+.nyc_output/
+istanbul/
+*.lcov
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+ehthumbs.db
+
+# TypeScript
 *.tsbuildinfo
-.expo
-.expo-shared
+next-env.d.ts
 
-# dependencies
-node_modules
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# IDEs and editors
-/.idea
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
+# Compiled JavaScript
+*.js.map
+*.jsx.map
+*.ts.map
+*.tsx.map
 
-# IDE - VSCode
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
+# Bundler cache
+.cache/
+.parcel-cache/
 
-# misc
-/.sass-cache
-/connect.lock
-/coverage
-/libpeerconnection.log
-npm-debug.log
-yarn-error.log
-testem.log
-/typings
+# Production
+public/build/
+
+# Testing
+.jest/
+jest.config.js
+
+# ESLint
+.eslintcache
+
+# Prettier
+.prettierignore
+
+# Husky
+.husky/
+
+# Storybook
+.storybook-static/
+storybook-static/
+
+# Lock files
+package-lock.json
+yarn.lock
 
 # System Files
 .DS_Store
 Thumbs.db
+desktop.ini
 
-.cursor/rules/nx-rules.mdc
-.github/instructions/nx.instructions.md
+# Editor specific
+.vs/
+.vsc/
+.atom/
+.sublime/
 
-# Replit
+# Temp Upload Folders
+.temp/
+
+# Compiled CSS
+*.css.map
+
+# Next.js
+.next/
+out/
+.next/cache/
+
+# Vercel
+.vercel/
+
+# Netlify
+.netlify/
+
+# Docker
+.docker/
+
+# Kubernetes
+.kube/
+
+# Terraform
+.terraform/
+
+# Ansible
+.retry/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Secrets
+secrets/
+credentials.json
+
+# Local configuration
+config/local.json
+!config/default.json
+
+# Backup files
+*~
+*.bak
+*.backup
+
+# Cache
 .cache/
-.local/
+.svelte-kit/
+.svelte/
+
+# Browserslist
+.browserslistrc
+
+# PostCSS
+.postcssrc
+
+# Tailwind
+.tailwind.config.js
+
+# Webpack
+webpack.config.js
+
+# Vite
+vite.config.js
+
+# Rollup
+rollup.config.js
+
+# Parcel
+.pparcel-cache/
+
+# Gatsby
+.cache/
+public/
+# End of .gitignore
