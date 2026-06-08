@@ -28,4 +28,4 @@ jobs:
         working-directory: artifacts/api-server
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: pnpm dlx -p drizzle-kit -p drizzle-orm drizzle-kit push --config=lib/db/drizzle.config.ts
+        run: pnpm dlx drizzle-kit push --config=lib/db/drizzle.config.ts
