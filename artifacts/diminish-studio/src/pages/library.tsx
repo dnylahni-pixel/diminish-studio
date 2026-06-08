@@ -27,7 +27,7 @@ export function LibraryPage() {
     <div className="p-6 md:p-10 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight mb-2">Library</h1>
+          <h1 className="text-3xl font-bold tracking-tight mb-2">Music Hub</h1>
           <p className="text-muted-foreground">
             Explore and analyze songs in the catalog.
           </p>
