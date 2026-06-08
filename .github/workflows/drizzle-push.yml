@@ -1,0 +1,28 @@
+name: Push Drizzle Schema to Neon
+
+on:
+  workflow_dispatch:
+
+jobs:
+  push-schema:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Push schema to Neon
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pnpm dlx -p drizzle-kit -p drizzle-orm drizzle-kit push --config=lib/db/drizzle.config.ts
