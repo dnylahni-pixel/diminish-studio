@@ -1,81 +1,144 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { Search, Filter, Play, Music, Headphones } from "lucide-react";
+import { Search, Filter, Play, Clock, Music } from "lucide-react";
 import { useListSongs } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 export function MusicHubPage() {
   const [search, setSearch] = useState("");
   const { data, isLoading, error } = useListSongs({ search });
 
-  // استخراج لیست آهنگ‌ها با اطمینان از ساختار دیتا
   const songs = Array.isArray(data)
     ? data
-    : (data as any)?.songs || (data as any)?.items || [];
+    : Array.isArray((data as any)?.songs)
+      ? (data as any).songs
+      : Array.isArray((data as any)?.items)
+        ? (data as any).items
+        : Array.isArray((data as any)?.data)
+          ? (data as any).data
+          : [];
 
   return (
     <div className="p-6 md:p-10 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-4xl font-black tracking-tighter mb-2">MUSIC HUB</h1>
-          <p className="text-muted-foreground text-lg">
-            Discover and explore the global catalog.
+          <h1 className="text-3xl font-bold tracking-tight mb-2">Music Hub</h1>
+          <p className="text-muted-foreground">
+            Explore and analyze songs in the catalog.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="relative w-full md:w-80">
+          <div className="relative w-full md:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search by artist, title or genre..."
-              className="pl-9 h-11 bg-card border-card-border"
+              placeholder="Search songs..."
+              className="pl-9 bg-card border-card-border"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
+          <Button variant="outline" size="icon" className="bg-card">
+            <Filter className="w-4 h-4" />
+          </Button>
         </div>
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {[...Array(8)].map((_, i) => (
-            <Skeleton key={i} className="aspect-[3/4] rounded-2xl" />
+            <div key={i} className="flex flex-col gap-3">
+              <Skeleton className="w-full aspect-square rounded-xl" />
+              <Skeleton className="h-5 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+            </div>
           ))}
         </div>
       ) : error ? (
-        <div className="py-20 text-center bg-card rounded-2xl border border-dashed border-red-500/50">
-          <p className="text-red-400">Failed to connect to the database.</p>
+        <div className="py-20 text-center text-red-400">
+          Failed to load songs.
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {songs.map((song: any) => (
             <Link key={song.id} href={`/songs/${song.id}`}>
-              <div className="group relative bg-card rounded-2xl overflow-hidden border border-card-border hover:border-primary/50 transition-all duration-300 cursor-pointer">
-                <div className="aspect-square relative overflow-hidden">
+              <div className="group cursor-pointer">
+                <div className="relative aspect-square rounded-xl overflow-hidden bg-muted mb-3 border border-border group-hover:border-primary/50 transition-colors">
                   {song.coverUrl ? (
-                    <img src={song.coverUrl} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                    <img
+                      src={song.coverUrl}
+                      alt={song.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-secondary">
-                      <Music className="w-12 h-12 opacity-20" />
+                    <div className="w-full h-full flex items-center justify-center bg-card">
+                      <Music className="w-12 h-12 text-muted-foreground/30" />
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
-                     <Button className="w-full gap-2 font-bold shadow-xl">
-                        <Play className="w-4 h-4 fill-current" /> PLAY NOW
-                     </Button>
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center transform translate-y-4 group-hover:translate-y-0 transition-all duration-300">
+                      <Play className="w-5 h-5 ml-1" />
+                    </div>
                   </div>
+
+                  {song.bpm && (
+                    <div className="absolute top-3 left-3 flex gap-2">
+                      <Badge
+                        variant="secondary"
+                        className="bg-background/80 backdrop-blur text-xs font-mono"
+                      >
+                        {song.bpm} BPM
+                      </Badge>
+                    </div>
+                  )}
                 </div>
-                <div className="p-4">
-                  <h3 className="font-bold text-lg truncate group-hover:text-primary transition-colors">{song.title}</h3>
-                  <p className="text-muted-foreground text-sm flex items-center gap-2">
-                    <Headphones className="w-3 h-3" /> {song.artist || "Unknown Artist"}
-                  </p>
+
+                <h3 className="font-bold text-lg truncate">{song.title}</h3>
+                <p className="text-muted-foreground text-sm truncate">
+                  {song.artist || "Unknown Artist"}
+                </p>
+
+                <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                  {typeof song.duration === "number" && (
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {Math.floor(song.duration / 60)}:
+                      {(song.duration % 60).toString().padStart(2, "0")}
+                    </span>
+                  )}
+
+                  {song.key && (
+                    <span className="px-2 py-0.5 rounded bg-secondary">
+                      {song.key}
+                    </span>
+                  )}
+
+                  {song.difficulty && (
+                    <span
+                      className={`px-2 py-0.5 rounded ${
+                        song.difficulty === "beginner"
+                          ? "bg-green-500/20 text-green-400"
+                          : song.difficulty === "intermediate"
+                            ? "bg-yellow-500/20 text-yellow-400"
+                            : "bg-red-500/20 text-red-400"
+                      }`}
+                    >
+                      {song.difficulty}
+                    </span>
+                  )}
                 </div>
               </div>
             </Link>
           ))}
+
+          {songs.length === 0 && (
+            <div className="col-span-full py-20 text-center text-muted-foreground">
+              No songs found. Try a different search.
+            </div>
+          )}
         </div>
       )}
     </div>
