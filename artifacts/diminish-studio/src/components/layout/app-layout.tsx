@@ -13,7 +13,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const { toggle, isDark } = useTheme();
 
 const navItems = [
-  { href: "/", label: "Music Hub", icon: Music },
+  { href: "/music-hub", label: "Music Hub", icon: Music },
   { href: "/library", label: "Library", icon: Library },
   { href: "/learn", label: "Learn", icon: GraduationCap },
   { href: "/process", label: "Process", icon: Upload },

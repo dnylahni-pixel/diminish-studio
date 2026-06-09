@@ -11,6 +11,7 @@ import { AppLayout } from "@/components/layout/app-layout";
 import { HomePage } from "@/pages/home";
 import { LoginPage } from "@/pages/login";
 import { RegisterPage } from "@/pages/register";
+import { MusicHubPage } from "@/pages/music-hub";
 import { LibraryPage } from "@/pages/library";
 import { PlayerPage } from "@/pages/player";
 import { LearnPage } from "@/pages/learn";
@@ -43,6 +44,12 @@ function Router() {
       <Route path="/register" component={RegisterPage} />
       <Route path="/register/:rest*" component={RegisterPage} />
 
+      <Route path="/music-hub">
+        <AppLayout>
+          <MusicHubPage />
+        </AppLayout>
+      </Route>
+      
       <Route path="/library">
         <AppLayout>
           <LibraryPage />

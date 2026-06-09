@@ -175,3 +175,7 @@ rollup.config.js
 .cache/
 public/
 # End of .gitignore
+# Env files
+.env
+.env.*
+!.env.example
