@@ -1,31 +1,86 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { songs } from "@workspace/db";
-import { eq } from "drizzle-orm";
-import { randomUUID } from "crypto";
+import { songs, artists } from "@workspace/db";
+import { eq, like, or } from "drizzle-orm";
 
 const router = Router();
 
 router.get("/", async (req, res) => {
   try {
-    const { genre, search } = req.query as { genre?: string; search?: string };
-    let songs = await db.select().from(songsTable);
-    if (genre) songs = songs.filter(s => s.genre.toLowerCase() === genre.toLowerCase());
+    const { search } = req.query as { search?: string };
+    
+    let query = db
+      .select({
+        id: songs.id,
+        title: songs.title,
+        artist: artists.name,
+        artistId: songs.artistId,
+        difficulty: songs.difficulty,
+        duration: songs.duration,
+        bpm: songs.bpm,
+        musicalKey: songs.musicalKey,
+        mode: songs.mode,
+        timeSignature: songs.timeSignature,
+        coverUrl: songs.coverUrl,
+        playCount: songs.playCount,
+        featured: songs.featured,
+        createdAt: songs.createdAt,
+        updatedAt: songs.updatedAt,
+      })
+      .from(songs)
+      .leftJoin(artists, eq(songs.artistId, artists.id));
+
+    let result = await query;
+
     if (search) {
-      const q = search.toLowerCase();
-      songs = songs.filter(s => s.title.toLowerCase().includes(q) || s.artist.toLowerCase().includes(q));
+      const q = `%${search.toLowerCase()}%`;
+      result = result.filter(s => 
+        s.title.toLowerCase().includes(search.toLowerCase()) || 
+        s.artist?.toLowerCase().includes(search.toLowerCase())
+      );
     }
-    res.json(songs);
+
+    res.json(result.map(s => ({
+      ...s,
+      key: s.musicalKey,
+    })));
   } catch (e) {
+    console.error(e);
     res.status(500).json({ error: "Failed to list songs" });
   }
 });
 
 router.get("/featured", async (req, res) => {
   try {
-    const songs = await db.select().from(songsTable).where(eq(songsTable.featured, true)).limit(8);
-    res.json(songs);
+    const result = await db
+      .select({
+        id: songs.id,
+        title: songs.title,
+        artist: artists.name,
+        artistId: songs.artistId,
+        difficulty: songs.difficulty,
+        duration: songs.duration,
+        bpm: songs.bpm,
+        musicalKey: songs.musicalKey,
+        mode: songs.mode,
+        timeSignature: songs.timeSignature,
+        coverUrl: songs.coverUrl,
+        playCount: songs.playCount,
+        featured: songs.featured,
+        createdAt: songs.createdAt,
+        updatedAt: songs.updatedAt,
+      })
+      .from(songs)
+      .leftJoin(artists, eq(songs.artistId, artists.id))
+      .where(eq(songs.featured, true))
+      .limit(8);
+
+    res.json(result.map(s => ({
+      ...s,
+      key: s.musicalKey,
+    })));
   } catch (e) {
+    console.error(e);
     res.status(500).json({ error: "Failed to get featured songs" });
   }
 });
@@ -98,15 +153,37 @@ router.get("/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) return res.status(400).json({ error: "Invalid id" });
-    const [song] = await db.select().from(songsTable).where(eq(songsTable.id, id));
-    if (!song) return res.status(404).json({ error: "Song not found" });
+    
+    const [result] = await db
+      .select({
+        id: songs.id,
+        title: songs.title,
+        artist: artists.name,
+        artistId: songs.artistId,
+        difficulty: songs.difficulty,
+        duration: songs.duration,
+        bpm: songs.bpm,
+        musicalKey: songs.musicalKey,
+        mode: songs.mode,
+        timeSignature: songs.timeSignature,
+        coverUrl: songs.coverUrl,
+        playCount: songs.playCount,
+        featured: songs.featured,
+        createdAt: songs.createdAt,
+        updatedAt: songs.updatedAt,
+      })
+      .from(songs)
+      .leftJoin(artists, eq(songs.artistId, artists.id))
+      .where(eq(songs.id, id));
+
+    if (!result) return res.status(404).json({ error: "Song not found" });
+    
     res.json({
-      ...song,
-      lyrics: song.lyrics ?? [],
-      chordTimeline: song.chordTimeline ?? [],
-      tracks: song.tracks ?? [],
+      ...result,
+      key: result.musicalKey,
     });
   } catch (e) {
+    console.error(e);
     res.status(500).json({ error: "Failed to get song" });
   }
 });

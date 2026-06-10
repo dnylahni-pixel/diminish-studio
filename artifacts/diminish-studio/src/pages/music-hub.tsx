@@ -84,16 +84,14 @@ export function MusicHubPage() {
                     </div>
                   </div>
 
-                  {song.bpm && (
-                    <div className="absolute top-3 left-3 flex gap-2">
-                      <Badge
-                        variant="secondary"
-                        className="bg-background/80 backdrop-blur text-xs font-mono"
-                      >
-                        {song.bpm} BPM
-                      </Badge>
-                    </div>
-                  )}
+                  <div className="absolute top-3 left-3 flex gap-2">
+                    <Badge
+                      variant="secondary"
+                      className="bg-background/80 backdrop-blur text-xs font-mono"
+                    >
+                      {song.bpm} BPM
+                    </Badge>
+                  </div>
                 </div>
 
                 <h3 className="font-bold text-lg truncate">{song.title}</h3>
@@ -102,33 +100,25 @@ export function MusicHubPage() {
                 </p>
 
                 <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                  {typeof song.duration === "number" && (
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {Math.floor(song.duration / 60)}:
-                      {(song.duration % 60).toString().padStart(2, "0")}
-                    </span>
-                  )}
-
-                  {song.key && (
-                    <span className="px-2 py-0.5 rounded bg-secondary">
-                      {song.key}
-                    </span>
-                  )}
-
-                  {song.difficulty && (
-                    <span
-                      className={`px-2 py-0.5 rounded ${
-                        song.difficulty === "beginner"
-                          ? "bg-green-500/20 text-green-400"
-                          : song.difficulty === "intermediate"
-                            ? "bg-yellow-500/20 text-yellow-400"
-                            : "bg-red-500/20 text-red-400"
-                      }`}
-                    >
-                      {song.difficulty}
-                    </span>
-                  )}
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {Math.floor(song.duration / 60)}:
+                    {(song.duration % 60).toString().padStart(2, "0")}
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-secondary">
+                    {song.key}
+                  </span>
+                  <span
+                    className={`px-2 py-0.5 rounded ${
+                      song.difficulty === "beginner"
+                        ? "bg-green-500/20 text-green-400"
+                        : song.difficulty === "intermediate"
+                          ? "bg-yellow-500/20 text-yellow-400"
+                          : "bg-red-500/20 text-red-400"
+                    }`}
+                  >
+                    {song.difficulty}
+                  </span>
                 </div>
               </div>
             </Link>
