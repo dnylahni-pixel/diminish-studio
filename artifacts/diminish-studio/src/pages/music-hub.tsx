@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { Search, Filter, Play, Clock, Music } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useListSongs } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,10 +9,7 @@ import { Badge } from "@/components/ui/badge";
 
 export function MusicHubPage() {
   const [search, setSearch] = useState("");
-const { data, isLoading, error } = useQuery({
-  queryKey: ['songs', search],
-  queryFn: () => fetch(`https://diminish-api.onrender.com/api/songs?search=${search}`).then(res => res.json())
-});
+  const { data, isLoading, error } = useListSongs({ search });
 
   const songs = Array.isArray(data)
     ? data

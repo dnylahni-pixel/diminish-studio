@@ -15,7 +15,7 @@ const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 // Module-level configuration
 // ---------------------------------------------------------------------------
 
-let _baseUrl: string | null = null;
+let _baseUrl: string | null = (import.meta as any).env?.VITE_API_BASE_URL || "https://diminish-api.onrender.com";
 let _authTokenGetter: AuthTokenGetter | null = null;
 
 /**
