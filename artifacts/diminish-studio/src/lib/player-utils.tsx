@@ -34,7 +34,14 @@ export const TL_H    = 56;
 
 export interface LyricLine  { time: number; text: string; chords: string[] }
 export interface ChordBeat  { measure: number; beat: number; chord: string; time: number }
-export interface AudioTrack { id: number; instrument: string; label: string; volume: number; muted: boolean }
+export interface AudioTrack {
+  id: number;
+  instrument: string;
+  label: string;
+  volume: number;
+  muted: boolean;
+  streamUrl: string;
+}
 
 export function getActiveIdx<T extends { time: number }>(arr: T[], t: number) {
   let i = -1;
