@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { customFetch } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { audioEngine } from "@/lib/AudioEngine";
 import { useAnimationFrame } from "@/hooks/useAnimationFrame";
@@ -58,13 +59,9 @@ function useDragChange(
 
 export function PlayerPage() {
   const { id } = useParams();
-    const { data: song, isLoading } = useQuery({
+  const { data: song, isLoading } = useQuery({
     queryKey: ['song-details', Number(id)],
-    queryFn: async () => {
-      const res = await fetch(`/api/song-details/${id}`);
-      if (!res.ok) throw new Error('Failed to fetch song details');
-      return res.json();
-    },
+    queryFn: () => customFetch<any>(`/api/song-details/${id}`, { responseType: "json" }),
     enabled: !!id,
   });
 
