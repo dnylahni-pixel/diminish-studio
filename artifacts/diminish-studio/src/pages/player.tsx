@@ -122,17 +122,42 @@ export function PlayerPage() {
     }
   }, playing);
 
-// ── timeline auto-scroll per beat ────────────────────────────────────────
+// ── timeline auto-scroll (SMART PAGE TURN WITH LOOKAHEAD) ──────────────
   useEffect(() => {
     if (!timelineRef.current || !song?.beatGrid) return;
-    
-    const beat = getActiveIdx(song.beatGrid, displayTime);
-    
-    if (beat < 0 || beat === prevBeat.current) return;
-    prevBeat.current = beat;
-    timelineRef.current.scrollLeft = Math.max(0, beat * BEAT_W - HEAD_X);
-  }, [displayTime, song]);
 
+    const beatIdx = getActiveIdx(song.beatGrid, displayTime);
+    if (beatIdx < 0) return;
+
+    const container = timelineRef.current;
+    // عرض کادر رو می‌گیریم تا رو هر صفحه‌نمایشی (گوشی یا مانیتور) درست کار کنه
+    const containerWidth = container.clientWidth || 800;
+    
+    // ۱. محاسبه اینکه کلاً چندتا واگن کامل تو این صفحه جا میشه
+    const visibleBeats = Math.floor(containerWidth / BEAT_W);
+    
+    // ۲. قانون طلایی: همیشه باید حداقل ۴ واگن (یک میزان) از آینده تو دید کاربر باشه
+    const lookahead = 4; 
+    
+    // ۳. پس هر بار که ورق می‌خوره، چندتا واگن باید بریم جلو؟
+    // (حداقل ۲ رو گذاشتم که اگه گوشی طرف خیلی باریک بود باگ نخوره)
+    const step = Math.max(2, visibleBeats - lookahead);
+    
+    // ۴. الان تو کدوم "بخش" از آهنگیم؟
+    const chunkIndex = Math.floor(beatIdx / step);
+    
+    // ۵. نقطه دقیق اسکرول برای ورق خوردن
+    const firstBeatOfChunk = chunkIndex * step;
+    
+    // منهای یک می‌کنیم که موقع ورق خوردن، همیشه ۱ واگن قبلی هم تو تصویر بمونه
+    const targetScroll = Math.max(0, (firstBeatOfChunk - 1) * BEAT_W);
+
+    // اگه نیاز به ورق زدن بود، خیلی نرم (smooth) انجامش بده
+    if (Math.abs(container.scrollLeft - targetScroll) > 10) {
+      container.scrollTo({ left: targetScroll, behavior: "smooth" });
+    }
+  }, [displayTime, song]);
+  
   // ── lyrics auto-scroll ────────────────────────────────────────────────────
   useEffect(() => {
     if (!lyricsRef.current || !song?.lyrics?.length) return;

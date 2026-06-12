@@ -24,13 +24,6 @@ export function ChordTimeline({
 }: ChordTimelineProps) {
   return (
     <div className="flex-shrink-0 relative border-b border-border/40" style={{ height: TL_H }}>
-      {/* Indicator */}
-      <div
-        className="absolute z-20 pointer-events-none"
-        style={{ left: HEAD_X, bottom: 3, transform: "translateX(-50%)" }}
-      >
-        <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-      </div>
 
       <div
         ref={timelineRef}
