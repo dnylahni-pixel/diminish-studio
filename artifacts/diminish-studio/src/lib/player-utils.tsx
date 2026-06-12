@@ -32,7 +32,20 @@ export const BEAT_W  = 56;
 export const HEAD_X  = 160;
 export const TL_H    = 56;
 
-export interface LyricLine  { time: number; text: string; chords: string[] }
+export interface LyricWord {
+  time: number;
+  end?: number;
+  text: string;
+}
+
+export interface LyricLine {
+  time: number;
+  end?: number;
+  text: string;
+  chords: string[];
+  words?: LyricWord[];
+}
+
 export interface ChordBeat  { measure: number; beat: number; chord: string; time: number }
 export interface AudioTrack {
   id: number;
@@ -43,11 +56,21 @@ export interface AudioTrack {
   streamUrl: string;
 }
 
-export function getActiveIdx<T extends { time: number }>(arr: T[], t: number) {
-  let i = -1;
-  for (let j = 0; j < arr.length; j++) { if (arr[j].time <= t) i = j; else break; }
-  return i;
+export function getActiveIdx<T extends { time: number; end?: number }>(arr: T[], t: number) {
+  for (let j = 0; j < arr.length; j++) {
+    const start = arr[j].time;
+    const end = typeof arr[j].end === "number" ? arr[j].end : arr[j + 1]?.time;
+
+    if (t >= start && (end === undefined || t < end)) {
+      return j;
+    }
+
+    if (start > t) break;
+  }
+
+  return -1;
 }
+
 export function fmt(s: number) {
   const m = Math.floor(s / 60), sec = Math.floor(s % 60);
   return `${m}:${sec.toString().padStart(2,"0")}`;
