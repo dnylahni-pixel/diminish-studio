@@ -122,15 +122,16 @@ export function PlayerPage() {
     }
   }, playing);
 
-  // ── timeline auto-scroll per beat ────────────────────────────────────────
+// ── timeline auto-scroll per beat ────────────────────────────────────────
   useEffect(() => {
-    if (!timelineRef.current || !song) return;
-    const bps  = (song.bpm * tempo) / 60;
-    const beat = Math.floor(displayTime * bps);
-    if (beat === prevBeat.current) return;
+    if (!timelineRef.current || !song?.beatGrid) return;
+    
+    const beat = getActiveIdx(song.beatGrid, displayTime);
+    
+    if (beat < 0 || beat === prevBeat.current) return;
     prevBeat.current = beat;
     timelineRef.current.scrollLeft = Math.max(0, beat * BEAT_W - HEAD_X);
-  }, [displayTime, song, tempo]);
+  }, [displayTime, song]);
 
   // ── lyrics auto-scroll ────────────────────────────────────────────────────
   useEffect(() => {
