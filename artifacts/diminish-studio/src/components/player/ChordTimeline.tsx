@@ -40,7 +40,7 @@ export function ChordTimeline({
         <div style={{ width: totalW, height: TL_H, display: "flex", flexDirection: "row" }}>
           {Array.from({ length: totalBeats }, (_, bi) => {
             const beatData = beatGrid[bi];
-            const isDownbeat = beatGrid?.[bi]?.isDownbeat || (bi % (timeSignature?.numerator || 4) === 0);
+            const isDownbeat = beatGrid[bi]?.isDownbeat ?? false;
             const chord = beatToChord[bi] ?? "";
             const isActive = bi === currentBeat;
             

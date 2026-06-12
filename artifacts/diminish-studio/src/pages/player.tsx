@@ -197,23 +197,22 @@ export function PlayerPage() {
 
   const beatToChord: string[] = Array(totalBeats).fill("");
 
-  if (song?.beatGrid && timeline.length > 0) {
-    let chordIndex = 0;
-  
+if (song?.beatGrid && timeline.length > 0) {
+    const chordLookup = new Map();
+    timeline.forEach((c: any) => chordLookup.set(`${c.measure}-${c.beat}`, c.chord));
+
+    let lastChord = "";
     for (let beatIndex = 0; beatIndex < totalBeats; beatIndex++) {
-      const beatTime = song.beatGrid[beatIndex].time;
-    
-      while (
-        chordIndex < timeline.length - 1 && 
-        timeline[chordIndex + 1].time <= beatTime
-      ) {
-        chordIndex++;
+      const b = song.beatGrid[beatIndex];
+      const currentChord = chordLookup.get(`${b.measure}-${b.beat}`);
+      
+      if (currentChord !== undefined) {
+        lastChord = currentChord;
       }
-    
-      beatToChord[beatIndex] = shiftChord(timeline[chordIndex]?.chord || "", semitones);
+      
+      beatToChord[beatIndex] = shiftChord(lastChord, semitones);
     }
   }
-
 
   const currentBeat = getActiveIdx(beatGrid, displayTime);
 
