@@ -122,15 +122,6 @@ export function PlayerPage() {
     }
   }, playing);
 
-  // ── timeline auto-scroll per beat ────────────────────────────────────────
-  useEffect(() => {
-    if (!timelineRef.current || !song) return;
-    const bps  = (song.bpm * tempo) / 60;
-    const beat = Math.floor(displayTime * bps);
-    if (beat === prevBeat.current) return;
-    prevBeat.current = beat;
-    timelineRef.current.scrollLeft = Math.max(0, beat * BEAT_W - HEAD_X);
-  }, [displayTime, song, tempo]);
 
   // ── lyrics auto-scroll ────────────────────────────────────────────────────
   useEffect(() => {
@@ -217,6 +208,13 @@ export function PlayerPage() {
 
   const currentBeat = getActiveIdx(beatGrid, displayTime);
 
+    // ── timeline auto-scroll per beat ────────────────────────────────────────
+  useEffect(() => {
+    if (!timelineRef.current || !song) return;
+    if (currentBeat < 0 || currentBeat === prevBeat.current) return;
+    prevBeat.current = currentBeat;
+    timelineRef.current.scrollLeft = Math.max(0, currentBeat * BEAT_W - HEAD_X);
+  }, [currentBeat]);
 
   const totalW      = Math.max(totalBeats * BEAT_W + HEAD_X * 2, 800);
 
