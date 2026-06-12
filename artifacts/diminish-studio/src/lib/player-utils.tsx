@@ -56,20 +56,34 @@ export interface AudioTrack {
   streamUrl: string;
 }
 
-export function getActiveIdx<T extends { time: number; end?: number }>(arr: T[], t: number) {
+export function getActiveIdx<T extends { time: number; end?: number }>(
+  arr: T[],
+  t: number,
+  options?: { exactMatch?: boolean }
+): number {
+  // Check for exact match (crucial for chord timeline)
+  if (options?.exactMatch) {
+    for (let j = 0; j < arr.length; j++) {
+      if (arr[j].time === t) {
+        return j;
+      }
+    }
+    return -1;
+  }
+
+  // Default behavior (for lyrics)
   for (let j = 0; j < arr.length; j++) {
     const start = arr[j].time;
-    const end = typeof arr[j].end === "number" ? arr[j].end : arr[j + 1]?.time;
+    const end: number = arr[j].end ?? arr[j + 1]?.time ?? Infinity;
 
-    if (t >= start && (end === undefined || t < end)) {
+    if (t >= start && t < end) {
       return j;
     }
-
-    if (start > t) break;
   }
 
   return -1;
 }
+
 
 export function fmt(s: number) {
   const m = Math.floor(s / 60), sec = Math.floor(s % 60);

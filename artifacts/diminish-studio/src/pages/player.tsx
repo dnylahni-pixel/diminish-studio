@@ -186,31 +186,38 @@ export function PlayerPage() {
 
   const lyrics   = (song.lyrics        ?? []) as LyricLine[];
   const timeline = (song.chordTimeline ?? []) as ChordBeat[];
+  const beatGrid = song?.beatGrid || [];
   const tracks   = (song.tracks        ?? []) as AudioTrack[];
 
   const activeLi   = getActiveIdx(lyrics, displayTime);
   const bpmDisplay = Math.round(song.bpm * tempo);
   const keyDisplay = shiftKey(song.key, semitones);
 
-  const totalBeats = timeline.length > 0
-    ? (timeline[timeline.length - 1].measure - 1) * 4 + timeline[timeline.length - 1].beat
-    : 0;
+  const totalBeats = song?.beatGrid?.length || 0;
 
-  const beatToChord: string[] = [];
-  let ci = 0;
-  for (let b = 0; b < totalBeats; b++) {
-    const bMeasure = Math.floor(b / 4) + 1;
-    const bBeat    = (b % 4) + 1;
-    while (
-      ci + 1 < timeline.length &&
-      (timeline[ci + 1].measure < bMeasure ||
-        (timeline[ci + 1].measure === bMeasure && timeline[ci + 1].beat <= bBeat))
-    ) ci++;
-    beatToChord.push(ci >= 0 ? timeline[ci]?.chord ?? "" : "");
+  const beatToChord: string[] = Array(totalBeats).fill("");
+
+  if (song?.beatGrid && timeline.length > 0) {
+    let chordIndex = 0;
+  
+    for (let beatIndex = 0; beatIndex < totalBeats; beatIndex++) {
+      const beatTime = song.beatGrid[beatIndex].time;
+    
+      while (
+        chordIndex < timeline.length - 1 && 
+        timeline[chordIndex + 1].time <= beatTime
+      ) {
+        chordIndex++;
+      }
+    
+      beatToChord[beatIndex] = shiftChord(timeline[chordIndex]?.chord || "", semitones);
+    }
   }
 
-  const bps         = (song.bpm * tempo) / 60;
-  const currentBeat = Math.floor(displayTime * bps);
+
+  const currentBeat = getActiveIdx(beatGrid, displayTime);
+
+
   const totalW      = Math.max(totalBeats * BEAT_W + HEAD_X * 2, 800);
 
   return (
@@ -235,6 +242,8 @@ export function PlayerPage() {
         beatToChord={beatToChord}
         semitones={semitones}
         currentBeat={currentBeat}
+        beatGrid={beatGrid}
+        timeSignature={song.timeSignature}
       />
 
       <LyricsPanel

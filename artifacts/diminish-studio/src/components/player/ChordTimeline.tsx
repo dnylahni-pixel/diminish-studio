@@ -8,22 +8,23 @@ interface ChordTimelineProps {
   beatToChord: string[];
   semitones: number;
   currentBeat: number;
+  beatGrid: any[];
+  timeSignature: { numerator: number; denominator: number };
 }
 
-export function ChordTimeline({ 
+export function ChordTimeline({
   timelineRef, 
   totalW, 
   totalBeats, 
   beatToChord, 
   semitones, 
-  currentBeat 
+  currentBeat,
+  beatGrid,
+  timeSignature
 }: ChordTimelineProps) {
   return (
-    <div
-      className="flex-shrink-0 relative border-b border-border/40"
-      style={{ height: TL_H }}
-      data-testid="chord-timeline"
-    >
+    <div className="flex-shrink-0 relative border-b border-border/40" style={{ height: TL_H }}>
+      {/* Indicator */}
       <div
         className="absolute z-20 pointer-events-none"
         style={{ left: HEAD_X, bottom: 3, transform: "translateX(-50%)" }}
@@ -38,12 +39,13 @@ export function ChordTimeline({
       >
         <div style={{ width: totalW, height: TL_H, display: "flex", flexDirection: "row" }}>
           {Array.from({ length: totalBeats }, (_, bi) => {
-            const isDownbeat = bi % 4 === 0;
-            const chord      = beatToChord[bi] ?? "";
-            const prevChord  = bi > 0 ? (beatToChord[bi - 1] ?? "") : null;
-            const showLabel  = chord !== prevChord || bi === 0;
-            const isActive   = bi === currentBeat;
-            const label      = showLabel ? shiftChord(chord, semitones) : "";
+            const beatData = beatGrid[bi];
+            const isDownbeat = beatGrid?.[bi]?.isDownbeat || (bi % (timeSignature?.numerator || 4) === 0);
+            const chord = beatToChord[bi] ?? "";
+            const isActive = bi === currentBeat;
+            
+            // بررسی برای نمایش فقط وقتی آکورد تغییر کرده
+            const showLabel = bi === 0 || beatToChord[bi] !== beatToChord[bi - 1];
 
             return (
               <div
@@ -57,23 +59,26 @@ export function ChordTimeline({
                 style={{ width: BEAT_W, height: TL_H }}
                 data-testid={`beat-${bi}`}
               >
+                {/* Separator line */}
                 <div
                   className="absolute left-0 top-0 bottom-0"
                   style={{
                     width: isDownbeat ? "1.5px" : "0.5px",
                     background: isDownbeat
-                      ? "hsl(var(--foreground) / 0.22)"
-                      : "hsl(var(--foreground) / 0.10)",
+                      ? "hsl(var(--foreground) / 0.35)"
+                      : "hsl(var(--foreground) / 0.15)",
                   }}
                 />
-                {label && (
+                
+                {/* Chord label */}
+                {showLabel && chord && (
                   <span
                     className={cn(
                       "font-mono font-semibold select-none tracking-tight leading-none truncate px-1 text-[13px]",
-                      isActive ? "text-primary" : "text-foreground/55",
+                      isActive ? "text-primary" : "text-foreground/65",
                     )}
                   >
-                    {label}
+                    {chord}
                   </span>
                 )}
               </div>
@@ -82,8 +87,10 @@ export function ChordTimeline({
         </div>
       </div>
 
+      {/* Fade effects */}
       <div className="absolute left-0 inset-y-0 w-8 bg-gradient-to-r from-background to-transparent pointer-events-none z-10" />
       <div className="absolute right-0 inset-y-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none z-10" />
     </div>
   );
 }
+
