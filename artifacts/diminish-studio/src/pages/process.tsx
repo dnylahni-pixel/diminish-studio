@@ -12,6 +12,9 @@ export function ProcessPage() {
   const [jobId, setJobId] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [audioPreviewUrl, setAudioPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -96,17 +99,135 @@ export function ProcessPage() {
     return true;
   };
 
-  // Handle file selection
+  // Upload file to presigned URL with progress tracking
+  const uploadFileToPresignedUrl = async (file: File, presignedUrl: string): Promise<boolean> => {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+
+      // Track upload progress
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const percentComplete = Math.round((e.loaded / e.total) * 100);
+          setUploadProgress(percentComplete);
+        }
+      });
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          setUploadProgress(100);
+          resolve(true);
+        } else {
+          reject(new Error(`Upload failed with status ${xhr.status}`));
+        }
+      });
+
+      xhr.addEventListener('error', () => {
+        reject(new Error('Upload failed'));
+      });
+
+      xhr.open('PUT', presignedUrl);
+      xhr.setRequestHeader('Content-Type', file.type || 'audio/mpeg');
+      xhr.send(file);
+    });
+  };
+
+  // Handle file selection and upload
   const handleFileSelect = async (file: File) => {
     const isValid = await handleFileValidation(file);
-    if (isValid) {
-      setSelectedFile(file);
+    if (!isValid) return;
+
+    setSelectedFile(file);
+    
+    // Create audio preview URL
+    const previewUrl = URL.createObjectURL(file);
+    setAudioPreviewUrl(previewUrl);
+    
+    toast({
+      title: "File ready",
+      description: `${file.name} is ready to upload.`,
+    });
+  };
+
+  // Cleanup preview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (audioPreviewUrl) {
+        URL.revokeObjectURL(audioPreviewUrl);
+      }
+    };
+  }, [audioPreviewUrl]);
+
+  // Handle upload button click
+  const handleFileUpload = async () => {
+    if (!selectedFile) return;
+
+    try {
+      // Step 1: Request presigned URL from backend
       toast({
-        title: "File ready",
-        description: `${file.name} is ready to process.`,
+        title: "Requesting upload URL...",
+        description: "Preparing secure upload link.",
       });
-      // TODO: Here you would request presigned URL from backend and upload
-      // For now, just show success
+
+      const response = await fetch('/api/upload/presigned-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename: selectedFile.name,
+          contentType: selectedFile.type || 'audio/mpeg',
+          fileSize: selectedFile.size,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get upload URL');
+      }
+
+      const { presignedUrl, fileKey } = await response.json();
+
+      // Step 2: Upload file directly to Backblaze B2
+      toast({
+        title: "Uploading...",
+        description: "Uploading your file to storage.",
+      });
+
+      const uploadSuccess = await uploadFileToPresignedUrl(selectedFile, presignedUrl);
+
+      if (!uploadSuccess) {
+        throw new Error('Upload failed');
+      }
+
+      // Step 3: Start processing with the file key
+      toast({
+        title: "Starting processing...",
+        description: "Your file is being analyzed.",
+      });
+
+      processMutation.mutate(
+        { data: { source: fileKey } },
+        {
+          onSuccess: (data) => {
+            setJobId(data.jobId);
+            toast({
+              title: "Processing started!",
+              description: "Your audio is being processed.",
+            });
+          },
+          onError: () => {
+            toast({
+              title: "Processing failed",
+              description: "Could not start processing your file.",
+              variant: "destructive",
+            });
+          },
+        }
+      );
+    } catch (error) {
+      toast({
+        title: "Upload failed",
+        description: error instanceof Error ? error.message : "Could not upload your file.",
+        variant: "destructive",
+      });
+      setSelectedFile(null);
     }
   };
 
@@ -211,10 +332,58 @@ export function ProcessPage() {
                 <>
                   <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-4" />
                   <h3 className="text-xl font-bold mb-2 text-green-500">File Selected</h3>
-                  <p className="text-muted-foreground text-sm">{selectedFile.name}</p>
-                  <p className="text-muted-foreground text-xs mt-1">
+                  <p className="text-muted-foreground text-sm mb-2">{selectedFile.name}</p>
+                  <p className="text-muted-foreground text-xs">
                     {(selectedFile.size / 1024 / 1024).toFixed(2)}MB
                   </p>
+                  
+                  {/* Audio Preview Player */}
+                  {audioPreviewUrl && (
+                    <div className="mt-6 w-full max-w-md mx-auto">
+                      <audio 
+                        controls 
+                        className="w-full h-10 rounded-lg"
+                        src={audioPreviewUrl}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                  )}
+
+                  {/* Upload Progress */}
+                  {isUploading && (
+                    <div className="mt-6 w-full max-w-md mx-auto">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-primary">Uploading...</span>
+                        <span className="text-sm font-mono text-primary">{uploadProgress}%</span>
+                      </div>
+                      <Progress 
+                        value={uploadProgress} 
+                        className="h-2 bg-muted"
+                      />
+                    </div>
+                  )}
+
+                  <Button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsUploading(true);
+                      handleFileUpload();
+                    }}
+                    className="mt-6 h-12 px-8 rounded-xl bg-primary text-primary-foreground font-bold shadow-[0_0_20px_-5px_var(--color-primary)]"
+                    disabled={isUploading || processMutation.isPending}
+                  >
+                    {isUploading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        Uploading {uploadProgress}%
+                      </>
+                    ) : (
+                      <>
+                        <UploadIcon className="w-5 h-5 mr-2" />
+                        Upload & Process
+                      </>
+                    )}
+                  </Button>
                 </>
               ) : (
                 <>
@@ -236,17 +405,22 @@ export function ProcessPage() {
               <div className="h-px bg-border flex-1" />
             </div>
 
-            <form onSubmit={handleSubmit} className="w-full flex gap-3">
+            <form onSubmit={handleSubmit} className="w-full flex gap-3 opacity-50 pointer-events-none">
               <div className="relative flex-1">
                 <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input 
-                  placeholder="Paste YouTube or SoundCloud URL..." 
+                  placeholder="Paste YouTube or SoundCloud URL (Coming Soon)..." 
                   className="h-14 pl-12 bg-background border-border text-lg rounded-xl"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
+                  disabled
                 />
               </div>
-              <Button type="submit" className="h-14 px-8 rounded-xl bg-primary text-primary-foreground font-bold text-lg shadow-[0_0_20px_-5px_var(--color-primary)]">
+              <Button 
+                type="submit" 
+                className="h-14 px-8 rounded-xl bg-primary text-primary-foreground font-bold text-lg shadow-[0_0_20px_-5px_var(--color-primary)]"
+                disabled
+              >
                 Process
               </Button>
             </form>
