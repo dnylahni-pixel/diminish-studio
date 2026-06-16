@@ -319,8 +319,8 @@ export function ProcessPage() {
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
             className="flex-1 flex flex-col items-center justify-center max-w-2xl mx-auto w-full"
           >
-            <div 
-              onClick={() => fileInputRef.current?.click()}
+            <div
+              onClick={() => !selectedFile && fileInputRef.current?.click()}
               onDragEnter={handleDragEnter}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
