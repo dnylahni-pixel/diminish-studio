@@ -8,19 +8,26 @@ import {
   timestamp,
 } from "drizzle-orm/pg-core";
 import { artists } from "./artists";
+import { usersTable } from "./users";
 
 export const songs = pgTable("songs", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
 
   artistId: integer("artist_id")
-    .notNull()
     .references(() => artists.id),
+
+  userId: integer("user_id")
+    .references(() => usersTable.id),
 
   genreId: integer("genre_id"),
 
   difficulty: text("difficulty").notNull().default("beginner"),
   duration: real("duration"),
+  fileKey: text("file_key"),
+  fileUrl: text("file_url"),
+  status: text("status").notNull().default("pending"),
+  mimeType: text("mime_type"),
   bpm: real("bpm"),
   musicalKey: text("musical_key"),
   mode: text("mode"),

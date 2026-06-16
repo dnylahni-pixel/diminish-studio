@@ -6,6 +6,7 @@ import usersRouter from "./users";
 import libraryRouter from "./library";
 import chordsRouter from "./chords";
 import learningRouter from "./learning";
+import uploadsRouter from "./uploads";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use("/users", usersRouter);
 router.use("/library", libraryRouter);
 router.use("/chords", chordsRouter);
 router.use("/learning", learningRouter);
+router.use("/uploads", uploadsRouter);
 
 export default router;

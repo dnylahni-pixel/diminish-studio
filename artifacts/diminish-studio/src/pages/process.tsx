@@ -15,6 +15,7 @@ export function ProcessPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [audioPreviewUrl, setAudioPreviewUrl] = useState<string | null>(null);
+  const [audioDuration, setAudioDuration] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -137,11 +138,18 @@ export function ProcessPage() {
     if (!isValid) return;
 
     setSelectedFile(file);
-    
+
+    // Get audio duration
+    const audio = new Audio();
+    const objectUrl = URL.createObjectURL(file);
+    audio.addEventListener('loadedmetadata', () => {
+      setAudioDuration(Math.ceil(audio.duration));
+    });
+    audio.src = objectUrl;
+
     // Create audio preview URL
-    const previewUrl = URL.createObjectURL(file);
-    setAudioPreviewUrl(previewUrl);
-    
+    setAudioPreviewUrl(objectUrl);
+
     toast({
       title: "File ready",
       description: `${file.name} is ready to upload.`,
@@ -168,13 +176,14 @@ export function ProcessPage() {
         description: "Preparing secure upload link.",
       });
 
-      const response = await fetch('/api/upload/presigned-url', {
+      const response = await fetch('/api/uploads/presign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          filename: selectedFile.name,
-          contentType: selectedFile.type || 'audio/mpeg',
+          fileName: selectedFile.name,
           fileSize: selectedFile.size,
+          mimeType: selectedFile.type || 'audio/mpeg',
+          duration: audioDuration,
         }),
       });
 
@@ -182,7 +191,7 @@ export function ProcessPage() {
         throw new Error('Failed to get upload URL');
       }
 
-      const { presignedUrl, fileKey } = await response.json();
+      const { uploadUrl, songId, fileKey } = await response.json();
 
       // Step 2: Upload file directly to Backblaze B2
       toast({
@@ -190,20 +199,20 @@ export function ProcessPage() {
         description: "Uploading your file to storage.",
       });
 
-      const uploadSuccess = await uploadFileToPresignedUrl(selectedFile, presignedUrl);
+      const uploadSuccess = await uploadFileToPresignedUrl(selectedFile, uploadUrl);
 
       if (!uploadSuccess) {
         throw new Error('Upload failed');
       }
 
-      // Step 3: Start processing with the file key
+      // Step 3: Start processing with the song
       toast({
         title: "Starting processing...",
         description: "Your file is being analyzed.",
       });
 
       processMutation.mutate(
-        { data: { source: fileKey } },
+        { data: { source: songId } },
         {
           onSuccess: (data) => {
             setJobId(data.jobId);
