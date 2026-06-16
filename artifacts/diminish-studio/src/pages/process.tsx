@@ -338,26 +338,12 @@ export function ProcessPage() {
               />
               <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
               {isDragging && (
-                <motion.svg
-                  className="absolute inset-0 w-full h-full pointer-events-none"
-                  viewBox="0 0 100 100"
-                  preserveAspectRatio="none"
-                >
-                  <motion.rect
-                    x="1.5"
-                    y="1.5"
-                    width="97"
-                    height="97"
-                    rx="4"
-                    fill="none"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth="1.5"
-                    strokeDasharray="8 8"
-                    initial={{ strokeDashoffset: 0 }}
-                    animate={{ strokeDashoffset: -32 }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                  />
-                </motion.svg>
+                <motion.div
+                  className="absolute inset-0 rounded-3xl pointer-events-none"
+                  initial={{ boxShadow: "0 0 0 0 hsl(var(--primary) / 0.3)" }}
+                  animate={{ boxShadow: "0 0 0 8px hsl(var(--primary) / 0)" }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }}
+                />
               )}
               {selectedFile ? (
                 <>
