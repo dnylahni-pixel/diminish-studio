@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Upload as UploadIcon, Link as LinkIcon, Loader2, Music, CheckCircle2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Upload as UploadIcon, Link as LinkIcon, Loader2, Music, CheckCircle2, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useProcessSong, useGetProcessingJob, getGetProcessingJobQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,15 @@ import { useToast } from "@/hooks/use-toast";
 export function ProcessPage() {
   const [url, setUrl] = useState("");
   const [jobId, setJobId] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  // Allowed formats and constraints
+  const ALLOWED_EXTENSIONS = ['.mp3', '.wav', '.flac'];
+  const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+  const MAX_DURATION = 600; // 10 minutes in seconds
   
   const processMutation = useProcessSong();
   const { data: job } = useGetProcessingJob(jobId || "", {
@@ -20,6 +28,124 @@ export function ProcessPage() {
       refetchInterval: (query) => (query.state.data?.status === 'done' || query.state.data?.status === 'error') ? false : 2000
     }
   });
+
+  // Validate file extension
+  const validateFileExtension = (file: File): boolean => {
+    const fileName = file.name.toLowerCase();
+    return ALLOWED_EXTENSIONS.some(ext => fileName.endsWith(ext));
+  };
+
+  // Validate file size
+  const validateFileSize = (file: File): boolean => {
+    return file.size <= MAX_FILE_SIZE;
+  };
+
+  // Validate audio duration using Web Audio API
+  const validateAudioDuration = async (file: File): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const audio = new Audio();
+      const objectUrl = URL.createObjectURL(file);
+      
+      audio.addEventListener('loadedmetadata', () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve(audio.duration <= MAX_DURATION);
+      });
+      
+      audio.addEventListener('error', () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve(false);
+      });
+      
+      audio.src = objectUrl;
+    });
+  };
+
+  // Handle file validation
+  const handleFileValidation = async (file: File) => {
+    // Check extension
+    if (!validateFileExtension(file)) {
+      toast({
+        title: "Invalid file format",
+        description: "Please upload MP3, WAV, or FLAC files only.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    // Check file size
+    if (!validateFileSize(file)) {
+      toast({
+        title: "File too large",
+        description: `Maximum file size is 50MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB.`,
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    // Check duration
+    const isDurationValid = await validateAudioDuration(file);
+    if (!isDurationValid) {
+      toast({
+        title: "Audio too long",
+        description: "Maximum duration is 10 minutes.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    return true;
+  };
+
+  // Handle file selection
+  const handleFileSelect = async (file: File) => {
+    const isValid = await handleFileValidation(file);
+    if (isValid) {
+      setSelectedFile(file);
+      toast({
+        title: "File ready",
+        description: `${file.name} is ready to process.`,
+      });
+      // TODO: Here you would request presigned URL from backend and upload
+      // For now, just show success
+    }
+  };
+
+  // Handle file input change
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileSelect(file);
+    }
+  };
+
+  // Handle drag events
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      handleFileSelect(file);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,11 +189,45 @@ export function ProcessPage() {
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
             className="flex-1 flex flex-col items-center justify-center max-w-2xl mx-auto w-full"
           >
-            <div className="w-full bg-card border border-card-border border-dashed rounded-3xl p-12 text-center hover:bg-card/80 hover:border-primary/50 transition-colors cursor-pointer mb-8 group relative overflow-hidden">
+            <div 
+              onClick={() => fileInputRef.current?.click()}
+              onDragEnter={handleDragEnter}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`w-full bg-card border border-card-border border-dashed rounded-3xl p-12 text-center hover:bg-card/80 hover:border-primary/50 transition-colors cursor-pointer mb-8 group relative overflow-hidden ${
+                isDragging ? 'border-primary bg-primary/10 scale-105' : ''
+              }`}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".mp3,.wav,.flac,audio/mpeg,audio/wav,audio/flac"
+                onChange={handleFileInputChange}
+                className="hidden"
+              />
               <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <UploadIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4 group-hover:text-primary transition-colors" />
-              <h3 className="text-xl font-bold mb-2">Drag & Drop Audio</h3>
-              <p className="text-muted-foreground text-sm">Supports MP3, WAV, FLAC up to 50MB</p>
+              {selectedFile ? (
+                <>
+                  <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold mb-2 text-green-500">File Selected</h3>
+                  <p className="text-muted-foreground text-sm">{selectedFile.name}</p>
+                  <p className="text-muted-foreground text-xs mt-1">
+                    {(selectedFile.size / 1024 / 1024).toFixed(2)}MB
+                  </p>
+                </>
+              ) : (
+                <>
+                  <UploadIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4 group-hover:text-primary transition-colors" />
+                  <h3 className="text-xl font-bold mb-2">
+                    {isDragging ? 'Drop your audio file' : 'Drag & Drop Audio'}
+                  </h3>
+                  <p className="text-muted-foreground text-sm">
+                    Supports MP3, WAV, FLAC up to 50MB • Max 10 minutes
+                  </p>
+                  <p className="text-primary text-sm font-medium mt-3">Click to browse files</p>
+                </>
+              )}
             </div>
 
             <div className="flex items-center w-full gap-4 mb-8">
