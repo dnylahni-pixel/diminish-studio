@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Upload as UploadIcon, Link as LinkIcon, Loader2, Music, CheckCircle2, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useProcessSong, useGetProcessingJob, getGetProcessingJobQueryKey } from "@workspace/api-client-react";
+import { useProcessSong, useGetProcessingJob, getGetProcessingJobQueryKey, customFetch } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -176,7 +176,7 @@ export function ProcessPage() {
         description: "Preparing secure upload link.",
       });
 
-      const response = await fetch('/api/uploads/presign', {
+      const { uploadUrl, songId, fileKey } = await customFetch<{ uploadUrl: string; songId: string; fileKey: string }>('/api/uploads/presign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -186,12 +186,6 @@ export function ProcessPage() {
           duration: audioDuration,
         }),
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to get upload URL');
-      }
-
-      const { uploadUrl, songId, fileKey } = await response.json();
 
       // Step 2: Upload file directly to Backblaze B2
       toast({
