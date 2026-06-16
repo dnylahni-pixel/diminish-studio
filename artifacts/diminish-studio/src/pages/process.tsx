@@ -367,54 +367,6 @@ export function ProcessPage() {
                   <p className="text-muted-foreground text-xs">
                     {(selectedFile.size / 1024 / 1024).toFixed(2)}MB
                   </p>
-                  
-                  {/* Audio Preview Player */}
-                  {audioPreviewUrl && (
-                    <div className="mt-6 w-full max-w-md mx-auto">
-                      <audio 
-                        controls 
-                        className="w-full h-10 rounded-lg"
-                        src={audioPreviewUrl}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </div>
-                  )}
-
-                  {/* Upload Progress */}
-                  {isUploading && (
-                    <div className="mt-6 w-full max-w-md mx-auto">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-primary">Uploading...</span>
-                        <span className="text-sm font-mono text-primary">{uploadProgress}%</span>
-                      </div>
-                      <Progress 
-                        value={uploadProgress} 
-                        className="h-2 bg-muted"
-                      />
-                    </div>
-                  )}
-
-                  <Button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsUploading(true);
-                      handleFileUpload();
-                    }}
-                    className="mt-6 h-12 px-8 rounded-xl bg-primary text-primary-foreground font-bold shadow-[0_0_20px_-5px_var(--color-primary)]"
-                    disabled={isUploading || processMutation.isPending}
-                  >
-                    {isUploading ? (
-                      <>
-                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                        Uploading {uploadProgress}%
-                      </>
-                    ) : (
-                      <>
-                        <UploadIcon className="w-5 h-5 mr-2" />
-                        Upload & Process
-                      </>
-                    )}
-                  </Button>
                 </>
               ) : (
                 <>
@@ -429,6 +381,55 @@ export function ProcessPage() {
                 </>
               )}
             </div>
+
+            {/* Audio Preview Player - outside drag box */}
+            {selectedFile && audioPreviewUrl && (
+              <div className="w-full max-w-md mx-auto mb-6">
+                <audio 
+                  controls 
+                  className="w-full h-10 rounded-lg"
+                  src={audioPreviewUrl}
+                />
+              </div>
+            )}
+
+            {/* Upload Progress - outside drag box */}
+            {selectedFile && isUploading && (
+              <div className="w-full max-w-md mx-auto mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-primary">Uploading...</span>
+                  <span className="text-sm font-mono text-primary">{uploadProgress}%</span>
+                </div>
+                <Progress 
+                  value={uploadProgress} 
+                  className="h-2 bg-muted"
+                />
+              </div>
+            )}
+
+            {/* Upload Button - outside drag box */}
+            {selectedFile && (
+              <Button 
+                onClick={() => {
+                  setIsUploading(true);
+                  handleFileUpload();
+                }}
+                className="mb-8 h-12 px-8 rounded-xl bg-primary text-primary-foreground font-bold shadow-[0_0_20px_-5px_var(--color-primary)]"
+                disabled={isUploading || processMutation.isPending}
+              >
+                {isUploading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Uploading {uploadProgress}%
+                  </>
+                ) : (
+                  <>
+                    <UploadIcon className="w-5 h-5 mr-2" />
+                    Upload & Process
+                  </>
+                )}
+              </Button>
+            )}
 
             <div className="flex items-center w-full gap-4 mb-8">
               <div className="h-px bg-border flex-1" />
