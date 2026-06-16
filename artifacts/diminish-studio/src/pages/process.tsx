@@ -328,6 +328,28 @@ export function ProcessPage() {
                 className="hidden"
               />
               <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+              {isDragging && (
+                <motion.svg
+                  className="absolute inset-0 w-full h-full pointer-events-none"
+                  viewBox="0 0 100 100"
+                  preserveAspectRatio="none"
+                >
+                  <motion.rect
+                    x="1.5"
+                    y="1.5"
+                    width="97"
+                    height="97"
+                    rx="4"
+                    fill="none"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth="1.5"
+                    strokeDasharray="8 8"
+                    initial={{ strokeDashoffset: 0 }}
+                    animate={{ strokeDashoffset: -32 }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                  />
+                </motion.svg>
+              )}
               {selectedFile ? (
                 <>
                   <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-4" />
