@@ -36,7 +36,7 @@ const s3Client = new S3Client({
   },
 });
 
-const BUCKET_NAME = process.env["B2_BUCKET_NAME"]!;
+const BUCKET_NAME = process.env["BUCKET_NAME"]!;
 
 const MIME_TO_EXT: Record<string, string> = {
   "audio/mpeg": "mp3",
