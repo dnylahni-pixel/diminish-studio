@@ -34,6 +34,8 @@ const s3Client = new S3Client({
     accessKeyId: process.env["B2_KEY_ID"]!,
     secretAccessKey: process.env["B2_APPLICATION_KEY"]!,
   },
+  requestChecksumCalculation: "WHEN_REQUIRED",
+  responseChecksumValidation: "WHEN_REQUIRED",
 });
 
 const BUCKET_NAME = process.env["BUCKET_NAME"]!;
@@ -76,7 +78,6 @@ router.post("/presign", async (req, res) => {
       Bucket: BUCKET_NAME,
       Key: fileKey,
       ContentType: mimeType,
-      ContentLength: fileSize,
     });
 
     const presignedUrl = await getSignedUrl(s3Client, command, {
