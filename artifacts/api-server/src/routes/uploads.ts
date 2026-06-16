@@ -85,11 +85,15 @@ router.post("/presign", async (req, res) => {
 
     const dbUserId = await getDbUserId(auth.userId);
 
+    const baseUrl = `${process.env["B2_ENDPOINT"]}/${BUCKET_NAME}`;
+    const fileUrl = `${baseUrl}/${fileKey}`;
+
     const [song] = await db
       .insert(songs)
       .values({
         title: fileName,
         fileKey,
+        fileUrl,
         status: "pending",
         duration,
         mimeType,
