@@ -69,7 +69,7 @@ router.post("/presign", async (req, res) => {
 
     const { fileName, fileSize, mimeType, duration } = parsed.data;
 
-    const ext = MIME_TO_EXT[mimeType] ?? fileName.split(".").pop() || "bin";
+    const ext = MIME_TO_EXT[mimeType] ?? fileName.split(".").pop() ?? "bin";
     const fileKey = `uploads/${auth.userId}/${randomUUID()}.${ext}`;
 
     const command = new PutObjectCommand({
