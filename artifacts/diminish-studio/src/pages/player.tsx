@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { customFetch } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { audioEngine } from "@/lib/AudioEngine";
 import { useAnimationFrame } from "@/hooks/useAnimationFrame";
+import { Sparkles, Loader2 } from "lucide-react";
 
 import {
   getActiveIdx,
@@ -74,7 +75,9 @@ export function PlayerPage() {
   const [volumes,     setVolumes]     = useState<Record<number, number>>({});
   const [muted,       setMuted]       = useState<Record<number, boolean>>({});
   const [uiVisible,   setUiVisible]   = useState(true);
+  const [analyzing,   setAnalyzing]   = useState(false);
 
+  const queryClient = useQueryClient();
   const timelineRef = useRef<HTMLDivElement>(null);
   const lyricsRef   = useRef<HTMLDivElement>(null);
   const idleTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -182,6 +185,22 @@ export function PlayerPage() {
   const tempoDrag = useDragChange(tempo, setTempo, 6, 0.05, 0.3, 2.0);
   const keyDrag   = useDragChange(semitones, setSemitones, 14, 1, -12, 12);
 
+  // ── analyze handler ──────────────────────────────────────────────────────
+  const handleAnalyze = useCallback(async () => {
+    setAnalyzing(true);
+    try {
+      await customFetch(`/api/songs/${id}/analyze`, {
+        method: "POST",
+        responseType: "json",
+      });
+      queryClient.invalidateQueries({ queryKey: ['song-details', Number(id)] });
+    } catch (e: any) {
+      console.error("Analyze failed:", e);
+    } finally {
+      setAnalyzing(false);
+    }
+  }, [id, queryClient]);
+
   // ── transport handlers (wired to AudioEngine) ────────────────────────────
   const handlePlayPause = useCallback(() => {
     if (playing) {
@@ -258,6 +277,25 @@ if (song?.beatGrid && timeline.length > 0) {
         setMixerOpen={setMixerOpen}
         resetIdle={resetIdle}
       />
+
+      {/* Analyze button — only shown when no beatGrid/chordTimeline exists */}
+      {(!song.beatGrid || song.beatGrid.length === 0) && (
+        <div className="flex-shrink-0 flex items-center justify-center px-4 py-2">
+          <button
+            onClick={handleAnalyze}
+            disabled={analyzing}
+            className="flex items-center gap-2 text-xs font-medium px-4 py-2 rounded-lg bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 transition-colors disabled:opacity-60"
+            data-testid="btn-analyze"
+          >
+            {analyzing ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Sparkles className="w-4 h-4" />
+            )}
+            {analyzing ? "Analyzing..." : "Analyze Song"}
+          </button>
+        </div>
+      )}
 
       <ChordTimeline
         timelineRef={timelineRef}

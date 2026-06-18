@@ -7,11 +7,13 @@ import libraryRouter from "./library";
 import chordsRouter from "./chords";
 import learningRouter from "./learning";
 import uploadsRouter from "./uploads";
+import analyzeRouter from "./analyze";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use("/songs", songsRouter);
+router.use("/songs", analyzeRouter);
 router.use("/song-details", songDetailsRouter);
 router.use("/users", usersRouter);
 router.use("/library", libraryRouter);
