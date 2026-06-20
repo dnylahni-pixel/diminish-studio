@@ -1,4 +1,6 @@
 import { Router } from "express";
+import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { db } from "@workspace/db";
 import { songs, songAnalyses } from "@workspace/db";
 import { eq } from "drizzle-orm";
@@ -7,6 +9,20 @@ const router = Router();
 
 const RUNPOD_ENDPOINT = process.env.RUNPOD_ENDPOINT || "";
 const RUNPOD_API_KEY = process.env.RUNPOD_API_KEY || "";
+
+const s3Client = new S3Client({
+  endpoint: process.env["B2_ENDPOINT"],
+  region: process.env["B2_REGION"],
+  credentials: {
+    accessKeyId: process.env["B2_KEY_ID"]!,
+    secretAccessKey: process.env["B2_APPLICATION_KEY"]!,
+  },
+  forcePathStyle: true,
+  requestChecksumCalculation: "WHEN_REQUIRED",
+  responseChecksumValidation: "WHEN_REQUIRED",
+});
+
+const BUCKET_NAME = process.env["BUCKET_NAME"]!;
 
 interface RunPodBeat {
   time: number;
@@ -34,9 +50,9 @@ router.post("/:id/analyze", async (req, res) => {
       return res.status(400).json({ error: "Invalid song ID" });
     }
 
-    // 1. Read fileUrl from songs table
+    // 1. Read fileKey from songs table and generate a fresh signed URL
     const [song] = await db
-      .select({ fileUrl: songs.fileUrl })
+      .select({ fileKey: songs.fileKey })
       .from(songs)
       .where(eq(songs.id, id));
 
@@ -44,9 +60,19 @@ router.post("/:id/analyze", async (req, res) => {
       return res.status(404).json({ error: "Song not found" });
     }
 
-    if (!song.fileUrl) {
-      return res.status(400).json({ error: "Song has no fileUrl — cannot analyze" });
+    if (!song.fileKey) {
+      return res.status(400).json({ error: "Song has no fileKey — cannot analyze" });
     }
+
+    // Generate a fresh signed GET URL so RunPod can download the file
+    // Expiry is set to 1 hour (3600s) — sufficient for RunPod to fetch and process
+    const getCommand = new GetObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: song.fileKey,
+    });
+    const audioUrl = await getSignedUrl(s3Client, getCommand, {
+      expiresIn: 3600,
+    });
 
     // 2. Set status to processing
     await db
@@ -80,7 +106,7 @@ router.post("/:id/analyze", async (req, res) => {
           Authorization: `Bearer ${RUNPOD_API_KEY}`,
         },
         body: JSON.stringify({
-          input: { audio_url: song.fileUrl },
+          input: { audio_url: audioUrl },
         }),
         signal: controller.signal,
       });
