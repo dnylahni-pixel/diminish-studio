@@ -89,8 +89,9 @@ export function ProcessPage() {
 
       xhr.upload.addEventListener('progress', (e) => {
         if (e.lengthComputable) {
-          const percentComplete = Math.round((e.loaded / e.total) * 100);
-          setUploadProgress(percentComplete);
+          // Cap at 95% during upload — last 5% is server ack (YouTube/Drive pattern)
+          const rawPercent = (e.loaded / e.total) * 100;
+          setUploadProgress(Math.min(95, Math.round(rawPercent)));
         }
       });
 
@@ -355,7 +356,9 @@ export function ProcessPage() {
             {selectedFile && isUploading && (
               <div className="w-full max-w-md mx-auto mb-6">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-primary">Uploading...</span>
+                  <span className="text-sm font-medium text-primary">
+                    {uploadProgress >= 95 && uploadProgress < 100 ? "Finalizing..." : "Uploading..."}
+                  </span>
                   <span className="text-sm font-mono text-primary">{uploadProgress}%</span>
                 </div>
                 <Progress 
