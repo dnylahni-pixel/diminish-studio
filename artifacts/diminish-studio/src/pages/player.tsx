@@ -82,6 +82,7 @@ export function PlayerPage() {
   const lyricsRef   = useRef<HTMLDivElement>(null);
   const idleTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevBeat    = useRef(-1);
+  const prevChunk   = useRef(-1);
 
   // ── init volumes/muted from song ─────────────────────────────────────────
   useEffect(() => {
@@ -149,16 +150,17 @@ export function PlayerPage() {
     // ۴. الان تو کدوم "بخش" از آهنگیم؟
     const chunkIndex = Math.floor(beatIdx / step);
     
+    // فقط وقتی chunk تغییر کرده اسکرول کن — نه هر فریم
+    if (chunkIndex === prevChunk.current) return;
+    prevChunk.current = chunkIndex;
+    
     // ۵. نقطه دقیق اسکرول برای ورق خوردن
     const firstBeatOfChunk = chunkIndex * step;
     
     // منهای یک می‌کنیم که موقع ورق خوردن، همیشه ۱ واگن قبلی هم تو تصویر بمونه
     const targetScroll = Math.max(0, (firstBeatOfChunk - 1) * BEAT_W);
 
-    // اگه نیاز به ورق زدن بود، خیلی نرم (smooth) انجامش بده
-    if (Math.abs(container.scrollLeft - targetScroll) > 10) {
-      container.scrollTo({ left: targetScroll, behavior: "smooth" });
-    }
+    container.scrollTo({ left: targetScroll, behavior: "instant" });
   }, [displayTime, song]);
   
   // ── lyrics auto-scroll ────────────────────────────────────────────────────
