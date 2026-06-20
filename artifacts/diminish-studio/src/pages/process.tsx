@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { Upload as UploadIcon, Link as LinkIcon, Loader2, Music, CheckCircle2, AlertCircle } from "lucide-react";
+import { Upload as UploadIcon, Link as LinkIcon, Loader2, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useProcessSong, useGetProcessingJob, getGetProcessingJobQueryKey, customFetch } from "@workspace/api-client-react";
+import { customFetch } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export function ProcessPage() {
   const [url, setUrl] = useState("");
-  const [jobId, setJobId] = useState<string | null>(null);
+  const [uploadedSongId, setUploadedSongId] = useState<number | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -19,32 +19,19 @@ export function ProcessPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  // Allowed formats and constraints
   const ALLOWED_EXTENSIONS = ['.mp3', '.wav', '.flac'];
   const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
   const MAX_DURATION = 600; // 10 minutes in seconds
-  
-  const processMutation = useProcessSong();
-  const { data: job } = useGetProcessingJob(jobId || "", {
-    query: { 
-      enabled: !!jobId, 
-      queryKey: getGetProcessingJobQueryKey(jobId || ""),
-      refetchInterval: (query) => (query.state.data?.status === 'done' || query.state.data?.status === 'error') ? false : 2000
-    }
-  });
 
-  // Validate file extension
   const validateFileExtension = (file: File): boolean => {
     const fileName = file.name.toLowerCase();
     return ALLOWED_EXTENSIONS.some(ext => fileName.endsWith(ext));
   };
 
-  // Validate file size
   const validateFileSize = (file: File): boolean => {
     return file.size <= MAX_FILE_SIZE;
   };
 
-  // Validate audio duration using Web Audio API
   const validateAudioDuration = async (file: File): Promise<boolean> => {
     return new Promise((resolve) => {
       const audio = new Audio();
@@ -64,9 +51,7 @@ export function ProcessPage() {
     });
   };
 
-  // Handle file validation
   const handleFileValidation = async (file: File) => {
-    // Check extension
     if (!validateFileExtension(file)) {
       toast({
         title: "Invalid file format",
@@ -76,7 +61,6 @@ export function ProcessPage() {
       return false;
     }
 
-    // Check file size
     if (!validateFileSize(file)) {
       toast({
         title: "File too large",
@@ -86,7 +70,6 @@ export function ProcessPage() {
       return false;
     }
 
-    // Check duration
     const isDurationValid = await validateAudioDuration(file);
     if (!isDurationValid) {
       toast({
@@ -100,12 +83,10 @@ export function ProcessPage() {
     return true;
   };
 
-  // Upload file to presigned URL with progress tracking
   const uploadFileToPresignedUrl = async (file: File, presignedUrl: string): Promise<boolean> => {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
 
-      // Track upload progress
       xhr.upload.addEventListener('progress', (e) => {
         if (e.lengthComputable) {
           const percentComplete = Math.round((e.loaded / e.total) * 100);
@@ -132,14 +113,12 @@ export function ProcessPage() {
     });
   };
 
-  // Handle file selection and upload
   const handleFileSelect = async (file: File) => {
     const isValid = await handleFileValidation(file);
     if (!isValid) return;
 
     setSelectedFile(file);
 
-    // Get audio duration
     const audio = new Audio();
     const objectUrl = URL.createObjectURL(file);
     audio.addEventListener('loadedmetadata', () => {
@@ -147,7 +126,6 @@ export function ProcessPage() {
     });
     audio.src = objectUrl;
 
-    // Create audio preview URL
     setAudioPreviewUrl(objectUrl);
 
     toast({
@@ -156,7 +134,6 @@ export function ProcessPage() {
     });
   };
 
-  // Cleanup preview URL on unmount
   useEffect(() => {
     return () => {
       if (audioPreviewUrl) {
@@ -165,18 +142,11 @@ export function ProcessPage() {
     };
   }, [audioPreviewUrl]);
 
-  // Handle upload button click
   const handleFileUpload = async () => {
     if (!selectedFile) return;
 
     try {
-      // Step 1: Request presigned URL from backend
-      toast({
-        title: "Requesting upload URL...",
-        description: "Preparing secure upload link.",
-      });
-
-      const { uploadUrl, songId, fileKey } = await customFetch<{ uploadUrl: string; songId: string; fileKey: string }>('/api/uploads/presign', {
+      const { uploadUrl, songId } = await customFetch<{ uploadUrl: string; songId: number; fileKey: string }>('/api/uploads/presign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -187,7 +157,6 @@ export function ProcessPage() {
         }),
       });
 
-      // Step 2: Upload file directly to Backblaze B2
       toast({
         title: "Uploading...",
         description: "Uploading your file to storage.",
@@ -199,31 +168,12 @@ export function ProcessPage() {
         throw new Error('Upload failed');
       }
 
-      // Step 3: Start processing with the song
+      // Upload complete — show success and keep songId for redirect
+      setUploadedSongId(songId);
       toast({
-        title: "Starting processing...",
-        description: "Your file is being analyzed.",
+        title: "Upload complete!",
+        description: `${selectedFile.name} has been uploaded successfully.`,
       });
-
-      processMutation.mutate(
-        { data: { source: songId } },
-        {
-          onSuccess: (data) => {
-            setJobId(data.jobId);
-            toast({
-              title: "Processing started!",
-              description: "Your audio is being processed.",
-            });
-          },
-          onError: () => {
-            toast({
-              title: "Processing failed",
-              description: "Could not start processing your file.",
-              variant: "destructive",
-            });
-          },
-        }
-      );
     } catch (error) {
       toast({
         title: "Upload failed",
@@ -234,7 +184,6 @@ export function ProcessPage() {
     }
   };
 
-  // Handle file input change
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -242,7 +191,6 @@ export function ProcessPage() {
     }
   };
 
-  // Handle drag events
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -274,38 +222,70 @@ export function ProcessPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!url) return;
-    
-    processMutation.mutate(
-      { data: { source: url } },
-      {
-        onSuccess: (data) => setJobId(data.jobId),
-        onError: () => toast({ title: "Failed to start processing", variant: "destructive" })
-      }
-    );
+    // URL-based processing removed — feature coming soon
   };
 
-  const getStatusText = (status?: string) => {
-    switch(status) {
-      case 'queued': return 'Waiting in queue...';
-      case 'analyzing': return 'Analyzing audio spectrum...';
-      case 'extracting_chords': return 'Extracting harmonic data...';
-      case 'syncing_lyrics': return 'Synchronizing lyrics to beats...';
-      case 'finalizing': return 'Finalizing project...';
-      case 'done': return 'Processing complete!';
-      case 'error': return 'Processing failed.';
-      default: return '';
-    }
+  const handleReset = () => {
+    setSelectedFile(null);
+    setUploadedSongId(null);
+    setUploadProgress(0);
+    setIsUploading(false);
+    setAudioPreviewUrl(null);
   };
 
   return (
     <div className="p-6 md:p-10 max-w-4xl mx-auto min-h-[calc(100vh-4rem)] flex flex-col">
       <div className="mb-10">
-        <h1 className="text-4xl font-bold tracking-tight mb-2">Process</h1>
-        <p className="text-muted-foreground text-lg">Extract chords and sync lyrics from any audio.</p>
+        <h1 className="text-4xl font-bold tracking-tight mb-2">Upload</h1>
+        <p className="text-muted-foreground text-lg">Upload your audio files to get started.</p>
       </div>
 
       <AnimatePresence mode="wait">
-        {!jobId ? (
+        {uploadedSongId ? (
+          <motion.div 
+            key="success"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            className="flex-1 flex flex-col items-center justify-center max-w-2xl mx-auto w-full"
+          >
+            <div className="w-full bg-card border border-card-border p-12 rounded-3xl text-center shadow-2xl relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-b from-green-500/10 to-transparent opacity-50" />
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-green-500 to-transparent" />
+              
+              <div className="relative z-10">
+                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="mb-8">
+                  <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6 text-green-500 shadow-[0_0_40px_-10px_rgba(34,197,94,0.5)]">
+                    <CheckCircle2 className="w-12 h-12" />
+                  </div>
+                  <h2 className="text-3xl font-bold mb-2">Upload Complete!</h2>
+                  <p className="text-muted-foreground mb-1">{selectedFile?.name}</p>
+                  <p className="text-muted-foreground text-sm">
+                    {selectedFile ? (selectedFile.size / 1024 / 1024).toFixed(2) : ''}MB
+                  </p>
+                </motion.div>
+                
+                <div className="flex gap-4 justify-center">
+                  <Button
+                    size="lg"
+                    className="h-12 px-8 font-bold bg-primary text-primary-foreground shadow-[0_0_20px_-5px_var(--color-primary)]"
+                    onClick={() => window.location.href = `/songs/${uploadedSongId}`}
+                  >
+                    Go to Player
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="h-12 px-8 font-bold"
+                    onClick={handleReset}
+                  >
+                    Upload Another
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        ) : (
           <motion.div 
             key="input"
             initial={{ opacity: 0, y: 20 }}
@@ -362,7 +342,6 @@ export function ProcessPage() {
               )}
             </div>
 
-            {/* Audio Preview Player - outside drag box */}
             {selectedFile && audioPreviewUrl && (
               <div className="w-full max-w-md mx-auto mb-6">
                 <audio 
@@ -373,7 +352,6 @@ export function ProcessPage() {
               </div>
             )}
 
-            {/* Upload Progress - outside drag box */}
             {selectedFile && isUploading && (
               <div className="w-full max-w-md mx-auto mb-6">
                 <div className="flex items-center justify-between mb-2">
@@ -387,7 +365,6 @@ export function ProcessPage() {
               </div>
             )}
 
-            {/* Upload Button - outside drag box */}
             {selectedFile && (
               <Button 
                 onClick={() => {
@@ -395,7 +372,7 @@ export function ProcessPage() {
                   handleFileUpload();
                 }}
                 className="mb-8 h-12 px-8 rounded-xl bg-primary text-primary-foreground font-bold shadow-[0_0_20px_-5px_var(--color-primary)]"
-                disabled={isUploading || processMutation.isPending}
+                disabled={isUploading}
               >
                 {isUploading ? (
                   <>
@@ -405,7 +382,7 @@ export function ProcessPage() {
                 ) : (
                   <>
                     <UploadIcon className="w-5 h-5 mr-2" />
-                    Upload & Process
+                    Upload
                   </>
                 )}
               </Button>
@@ -436,46 +413,6 @@ export function ProcessPage() {
                 Process
               </Button>
             </form>
-          </motion.div>
-        ) : (
-          <motion.div 
-            key="processing"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex-1 flex flex-col items-center justify-center max-w-2xl mx-auto w-full"
-          >
-            <div className="w-full bg-card border border-card-border p-12 rounded-3xl text-center shadow-2xl relative overflow-hidden">
-              {/* Animated Background */}
-              <div className="absolute inset-0 bg-gradient-to-b from-primary/10 to-transparent opacity-50" />
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent" />
-              
-              <div className="relative z-10">
-                {job?.status === 'done' ? (
-                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="mb-8">
-                    <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6 text-green-500 shadow-[0_0_40px_-10px_rgba(34,197,94,0.5)]">
-                      <CheckCircle2 className="w-12 h-12" />
-                    </div>
-                    <h2 className="text-3xl font-bold mb-4">Song Ready</h2>
-                    <Button size="lg" className="h-12 px-8 font-bold bg-primary text-primary-foreground shadow-[0_0_20px_-5px_var(--color-primary)]" onClick={() => window.location.href = `/songs/${job.songId}`}>
-                      Open in Player
-                    </Button>
-                  </motion.div>
-                ) : (
-                  <>
-                    <div className="relative w-32 h-32 mx-auto mb-8">
-                      <div className="absolute inset-0 border-4 border-muted rounded-full" />
-                      <div className="absolute inset-0 border-4 border-primary rounded-full border-t-transparent animate-spin" />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Music className="w-8 h-8 text-primary animate-pulse" />
-                      </div>
-                    </div>
-                    <h2 className="text-2xl font-bold mb-2 animate-pulse">{getStatusText(job?.status)}</h2>
-                    <p className="text-muted-foreground font-mono mb-8">{job?.progress || 0}% Complete</p>
-                    <Progress value={job?.progress || 0} className="h-2 w-full bg-muted" />
-                  </>
-                )}
-              </div>
-            </div>
           </motion.div>
         )}
       </AnimatePresence>
