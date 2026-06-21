@@ -66,30 +66,30 @@ export function ChordTimeline({
                 />
                 
                 {/* Chord label */}
-{showLabel && chord && (
-  <span
-    className={cn(
-      "font-sans font-semibold select-none tracking-tight leading-none truncate px-1 text-[16px] flex items-baseline",
-      isActive ? "text-primary" : "text-foreground/65",
-    )}
-    dir="ltr"
-  >
-    {isRest ? (
-      <span className="text-[16px]">𝄽</span>
-    ) : (
-      <>
-        {root}
-        {accidental && (
-          <span className="text-[12px] leading-none -ml-0.5 translate-y-[1px]">{accidental}</span>
-        )}
-        {suffix && (
-          <sup className="text-[10px] leading-none ml-px">{suffix}</sup>
-        )}
-      </>
-    )}
-  </span>
-)}
-
+                {showLabel && chord && (
+                  <span
+                    className={cn(
+                      "font-semibold select-none tracking-tight leading-none truncate px-0.5 text-[18px] flex items-baseline",
+                      isActive ? "text-primary" : "text-foreground/65",
+                    )}
+                    style={{ fontFamily: "'Inter', sans-serif" }}
+                    dir="ltr"
+                  >
+                    {isRest ? (
+                      <span className="text-[18px]">𝄽</span>
+                    ) : (
+                      <>
+                        {root}
+                        {accidental && (
+                          <span className="text-[13px] leading-none -ml-0.5 translate-y-[1px]">{accidental}</span>
+                        )}
+                        {suffix && (
+                          <sup className="text-[11px] leading-none ml-px">{suffix}</sup>
+                        )}
+                      </>
+                    )}
+                  </span>
+                )}
               </div>
             );
           })}
