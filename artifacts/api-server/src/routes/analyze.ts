@@ -158,7 +158,8 @@ router.post("/:id/analyze", async (req, res) => {
 
     for (const ch of chords) {
       // Find beats whose time falls within [ch.start, ch.end)
-      const covered = beatTimeline.filter((b) => b.time >= ch.start && b.time < ch.end);
+            const ownerBeat = [...beatTimeline].reverse().find((b) => b.time <= ch.start);
+      const covered = ownerBeat ? [ownerBeat] : [];
       if (covered.length > 0) {
         for (const b of covered) {
           chordTimeline.push({
@@ -170,7 +171,8 @@ router.post("/:id/analyze", async (req, res) => {
         }
       } else {
         // If no beat falls inside, snap to closest beat after start
-        const nextBeat = beatTimeline.find((b) => b.time >= ch.start);
+                const nextBeat = beatTimeline[0];
+
         if (nextBeat) {
           chordTimeline.push({
             measure: nextBeat.measure,
