@@ -24,10 +24,11 @@ class AudioEngine {
   private onLoadProgressCallback?: LoadProgressCallback;
   private onEndedCallback?: EndedCallback;
 
-  // شمارندهٔ سورس‌های فعال (برای تشخیص پایان واقعی)
-  private activeSourceCount: number = 0;
+  // Track reference for ended event
+  private referenceTrackId?: string;
 
   constructor() {
+    // ایجاد کانتکست (در اولین تعامل کاربر باید resume شود)
     this.context = new (window.AudioContext || (window as any).webkitAudioContext)();
   }
 
@@ -56,6 +57,11 @@ class AudioEngine {
       const gainNode = this.context.createGain();
       gainNode.connect(this.context.destination);
       this.gainNodes.set(id, gainNode);
+
+      // Set reference track (first loaded track)
+      if (!this.referenceTrackId) {
+        this.referenceTrackId = id;
+      }
 
       this.loadingStatus.set(id, 'loaded');
       this.onLoadProgressCallback?.(id, 'loaded');
@@ -100,37 +106,42 @@ class AudioEngine {
   play(offset: number = 0): boolean {
     if (this.isPlaying) return false;
 
+    // Guard: check if all tracks are loaded
     if (!this.areAllTracksLoaded()) {
       console.warn('Cannot play: not all tracks are loaded');
       return false;
     }
 
-    this.context.resume();
-
-    // ریست شمارنده سورس‌های فعال
-    this.activeSourceCount = 0;
-
+    this.context.resume(); // رفع محدودیت مرورگر
+    
     this.buffers.forEach((buffer, id) => {
       const source = this.context.createBufferSource();
       source.buffer = buffer;
       
+      // اتصال به گین نود مربوط به خودش
       const gainNode = this.gainNodes.get(id);
       if (gainNode) source.connect(gainNode);
 
-      // افزایش شمارنده به ازای هر سورس
-      this.activeSourceCount++;
+      // Setup onended handler for reference track
+      if (id === this.referenceTrackId) {
+        source.onended = () => {
+          if (this.isPlaying) {
+            this.sources.forEach(s => {
+              try {
+                s.stop();
+              } catch (e) {
+                // Already stopped
+              }
+            });
+            this.sources.clear();
+            this.isPlaying = false;
+            this.pausedAt = 0;
+            this.onEndedCallback?.();
+          }
+        };
+      }
 
-      source.onended = () => {
-        this.activeSourceCount--;
-        // تنها وقتی همه تمام شده باشند پخش پایان می‌یابد
-        if (this.activeSourceCount === 0 && this.isPlaying) {
-          this.sources.clear();
-          this.isPlaying = false;
-          this.pausedAt = 0;
-          this.onEndedCallback?.();
-        }
-      };
-
+      // شروع پخش از نقطه مشخص شده
       source.start(0, offset);
       this.sources.set(id, source);
     });
@@ -151,8 +162,7 @@ class AudioEngine {
       }
     });
     this.sources.clear();
-    this.activeSourceCount = 0;  // ریست شمارنده
-
+    
     this.pausedAt = this.context.currentTime - this.startTime;
     this.isPlaying = false;
   }
@@ -160,6 +170,7 @@ class AudioEngine {
   seek(time: number): void {
     const wasPlaying = this.isPlaying;
     
+    // Stop current sources
     if (this.isPlaying) {
       this.sources.forEach(source => {
         try {
@@ -174,6 +185,7 @@ class AudioEngine {
 
     this.pausedAt = time;
 
+    // Resume playback if was playing
     if (wasPlaying) {
       this.play(time);
     }
@@ -191,11 +203,13 @@ class AudioEngine {
     const gainNode = this.gainNodes.get(id);
     if (!gainNode) return;
 
+    // If track is muted, only update previousVolumes
     if (this.mutedTracks.has(id)) {
       this.previousVolumes.set(id, volume);
       return;
     }
 
+    // استفاده از ramp برای جلوگیری از صدای "تیک" موقع تغییر ولوم
     gainNode.gain.setTargetAtTime(volume, this.context.currentTime, 0.02);
     this.previousVolumes.set(id, volume);
   }
@@ -206,14 +220,17 @@ class AudioEngine {
     if (!gainNode) return;
 
     if (muted) {
+      // Save current volume before muting
       if (!this.mutedTracks.has(id)) {
         const currentVolume = this.previousVolumes.get(id) ?? gainNode.gain.value;
         this.previousVolumes.set(id, currentVolume);
         this.mutedTracks.add(id);
       }
       
+      // Mute
       gainNode.gain.setTargetAtTime(0, this.context.currentTime, 0.02);
     } else {
+      // Unmute
       this.mutedTracks.delete(id);
       const previousVolume = this.previousVolumes.get(id) ?? 0.8;
       gainNode.gain.setTargetAtTime(previousVolume, this.context.currentTime, 0.02);
