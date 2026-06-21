@@ -143,7 +143,7 @@ export function PlayerPage() {
 
     const windowStart = prevWindowStart.current;
     const halfWindow = Math.floor(visibleBeats / 2);
-    const triggerRatio = 0.7; // درصدی از پنجره که نشانگر باید طی کنه قبل از جهش (۰.۵ = وسط، ۰.۶ = کمی جلوتر از وسط)
+    const triggerRatio = 0.8; // درصدی از پنجره که نشانگر باید طی کنه قبل از جهش (۰.۵ = وسط، ۰.۶ = کمی جلوتر از وسط)
 const triggerPoint = windowStart + Math.floor(visibleBeats * triggerRatio);
 
     if (beatIdx < triggerPoint) return;
