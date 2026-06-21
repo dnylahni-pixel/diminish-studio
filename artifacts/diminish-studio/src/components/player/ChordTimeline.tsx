@@ -85,8 +85,9 @@ export function ChordTimeline({
 )}
 
                         {suffix && (
-  <span className="text-[17px] leading-none ml-0.5 translate-y-1">{suffix}</span>
+  <span className="text-[17px] leading-none ml-0.5 translate-y-0.5">{suffix}</span>
 )}
+
 
                       </>
                     )}
