@@ -95,6 +95,10 @@ class AudioEngine {
     });
     return failed;
   }
+    // Public check: are all tracks loaded? (for UI to query on demand)
+  isReady(): boolean {
+    return this.areAllTracksLoaded();
+  }
 
   // Check if all tracks are loaded
   private areAllTracksLoaded(): boolean {
