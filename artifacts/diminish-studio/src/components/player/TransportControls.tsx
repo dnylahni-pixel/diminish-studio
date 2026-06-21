@@ -4,8 +4,10 @@ import { fmt } from "@/lib/player-utils";
 
 export function TransportControls({
   uiVisible, time, setTime, song, resetIdle, tempoDrag, bpmDisplay,
-  tempo, setTempo, playing, setPlaying, keyDrag, keyDisplay, semitones, setSemitones
+  tempo, setTempo, playing, setPlaying, keyDrag, keyDisplay, semitones, setSemitones,
+  tracksReady, loadProgress
 }: any) {
+
   return (
     <motion.div
       animate={{ opacity: uiVisible ? 1 : 0, y: uiVisible ? 0 : 6 }}
@@ -16,22 +18,30 @@ export function TransportControls({
     >
       <div className="flex items-center gap-3">
         <span className="text-[10px] font-mono text-muted-foreground/50 w-7 text-right tabular-nums">{fmt(time)}</span>
-        <div className="flex-1 relative h-[3px] rounded-full bg-border/40 overflow-hidden">
-          <div
-            className="absolute left-0 top-0 bottom-0 rounded-full bg-primary/60 transition-none"
-            style={{ width: `${(time / (song.duration || 1)) * 100}%` }}
-          />
-          <input
-            type="range"
-            min={0}
-            max={song.duration}
-            step={0.1}
-            value={time}
-            onChange={e => { setTime(+e.target.value); resetIdle(); }}
-            className="absolute inset-0 w-full opacity-0 cursor-pointer h-full"
-            data-testid="slider-progress"
-          />
-        </div>
+       <div className="flex-1 relative h-[3px] rounded-full bg-border/40 overflow-hidden">
+  {loadProgress && (
+    <div
+      className="absolute left-0 top-0 bottom-0 rounded-full bg-foreground/10 transition-all duration-500"
+      style={{ width: `${loadProgress.total > 0 ? (loadProgress.loaded / loadProgress.total) * 100 : 0}%` }}
+      data-testid="buffer-progress"
+    />
+  )}
+  <div
+    className="absolute left-0 top-0 bottom-0 rounded-full bg-primary/60 transition-none"
+    style={{ width: `${(time / (song.duration || 1)) * 100}%` }}
+  />
+  <input
+    type="range"
+    min={0}
+    max={song.duration}
+    step={0.1}
+    value={time}
+    onChange={e => { setTime(+e.target.value); resetIdle(); }}
+    className="absolute inset-0 w-full opacity-0 cursor-pointer h-full"
+    data-testid="slider-progress"
+  />
+</div>
+
         <span className="text-[10px] font-mono text-muted-foreground/35 w-7 tabular-nums">{fmt(song.duration)}</span>
       </div>
 
