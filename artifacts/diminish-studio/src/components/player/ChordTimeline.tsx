@@ -12,6 +12,14 @@ interface ChordTimelineProps {
   timeSignature: { numerator: number; denominator: number };
 }
 
+function RestIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor" style={{ display: "inline-block" }}>
+      <path d="M7 3c2.5 1.5 4 3.2 4 5 0 1.3-.9 2.1-2 3 1.7.4 3 1.6 3 3.3 0 1.5-1 2.4-1.9 3.2-.9.8-1.6 1.5-1.6 2.3 0 .6.4 1 .9 1.4l-.7.8c-.9-.6-1.7-1.4-1.7-2.5 0-1.1.8-1.9 1.7-2.7.9-.8 1.7-1.5 1.7-2.5 0-1.2-1.1-2-2.4-2.3l-.6-.1.5-.4c1.2-.9 1.9-1.6 1.9-2.5 0-1.2-1.1-2.6-3-3.9L7 3z"/>
+    </svg>
+  );
+}
+
 export function ChordTimeline({
   timelineRef, 
   totalW, 
@@ -42,9 +50,8 @@ export function ChordTimeline({
 
             const { root, accidental, suffix, isRest } = parseChordDisplay(chord);
 
-            // استثنا: فقط وقتی chord خیلی بلنده (مثل D♯maj7) سایز رو کوچیک‌تر کن
-            const visualLength = root.length + (accidental ? 1 : 0) + suffix.length;
-            const isExtraLong = visualLength >= 6;
+            // استثنا: فقط وقتی suffix خودش طولانیه (مثل maj7, sus4) سایز رو کوچیک‌تر کن
+            const isExtraLong = suffix.length >= 3;
 
             const rootSize   = isExtraLong ? "text-[19px]" : "text-[24px]";
             const accSize    = isExtraLong ? "text-[13px]" : "text-[17px]";
@@ -77,7 +84,7 @@ export function ChordTimeline({
                 {showLabel && chord && (
                   <span
                     className={cn(
-                      "font-semibold select-none tracking-tight leading-none truncate px-0.5 flex items-baseline",
+                      "font-semibold select-none tracking-tight leading-none truncate px-0.5 flex items-center",
                       rootSize,
                       isActive ? "text-primary" : "text-foreground/65",
                     )}
@@ -85,17 +92,17 @@ export function ChordTimeline({
                     dir="ltr"
                   >
                     {isRest ? (
-                      <span className={rootSize}>𝄽</span>
+                      <RestIcon className="w-4 h-4" />
                     ) : (
-                      <>
+                      <span className="flex items-baseline">
                         {root}
                         {accidental && (
                           <span className={cn(accSize, "leading-none -ml-0.5 -translate-y-0.5")}>{accidental}</span>
                         )}
                         {suffix && (
-                          <span className={cn(suffixSize, "leading-none ml-0.5 translate-y-0.5")}>{suffix}</span>
+                          <span className={cn(suffixSize, "leading-none ml-0.5")}>{suffix}</span>
                         )}
-                      </>
+                      </span>
                     )}
                   </span>
                 )}
