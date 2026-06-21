@@ -81,10 +81,10 @@ export function ChordTimeline({
                       <>
                         {root}
                         {accidental && (
-                          <span className="text-[13px] leading-none -ml-0.5 translate-y-[1px]">{accidental}</span>
+                          <span className="text-[17px] leading-none -ml-0.5 translate-y-[1px]">{accidental}</span>
                         )}
                         {suffix && (
-                          <sup className="text-[11px] leading-none ml-px">{suffix}</sup>
+                          <sup className="text-[15px] leading-none ml-px">{suffix}</sup>
                         )}
                       </>
                     )}
