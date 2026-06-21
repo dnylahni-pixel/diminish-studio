@@ -55,11 +55,12 @@ const suffixSize = isExtraLong ? "text-[15px]" : "text-[20px]";
               <div
                 key={bi}
                 className={cn(
-                  "flex-shrink-0 flex items-center justify-center relative",
-                  isActive
-                    ? "bg-primary/10 dark:bg-primary/15"
-                    : "bg-muted/15 hover:bg-muted/25"
-                )}
+  "flex-shrink-0 flex items-center justify-center relative",
+  isActive
+    ? "bg-primary/25 dark:bg-primary/35"
+    : "bg-muted/15 hover:bg-muted/25"
+)}
+
                 style={{ width: BEAT_W, height: TL_H }}
                 data-testid={`beat-${bi}`}
               >
