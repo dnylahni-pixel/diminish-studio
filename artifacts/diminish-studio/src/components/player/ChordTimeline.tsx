@@ -12,28 +12,6 @@ interface ChordTimelineProps {
   timeSignature: { numerator: number; denominator: number };
 }
 
-function RestIcon() {
-  return (
-    <svg
-      viewBox="0 0 40 80"
-      width="28"
-      height="56"
-      fill="currentColor"
-    >
-      <path d="M24 4
-               C28 10 30 18 30 24
-               C30 30 24 34 20 40
-               C16 46 14 50 14 56
-               C14 64 20 70 28 74
-               L24 78
-               C14 74 8 66 8 56
-               C8 48 12 42 16 36
-               C20 30 24 26 24 20
-               C24 14 22 10 18 4
-               Z"/>
-    </svg>
-  );
-}
 
 export function ChordTimeline({
   timelineRef, 
@@ -107,8 +85,9 @@ export function ChordTimeline({
                     dir="ltr"
                   >
                     {isRest ? (
-                      <RestIcon className="w-4 h-4" />
-                    ) : (
+  <span style={{ fontFamily: "'Noto Music', sans-serif" }}>𝄽</span>
+) : (
+
                       <span className="flex items-baseline">
                         {root}
                         {accidental && (
