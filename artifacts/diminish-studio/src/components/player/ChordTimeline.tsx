@@ -91,14 +91,10 @@ const suffixSize = isExtraLong ? "text-[15px]" : "text-[20px]";
 
                       <span className="flex items-baseline">
                         {root}
-                       {accidental && (
-  <span
-    className={cn(accSize, "leading-none -ml-0.5 -translate-y-0.5")}
-    style={{ fontFamily: "'Noto Music', 'Inter', sans-serif" }}
-  >
-    {accidental}
-  </span>
+                     {accidental && (
+  <span className={cn(accSize, "leading-none -ml-0.5 -translate-y-0.5")}>{accidental}</span>
 )}
+
 
                         {suffix && (
                           <span className={cn(suffixSize, "leading-none ml-0.5")}>{suffix}</span>
