@@ -69,14 +69,14 @@ export function ChordTimeline({
                 {showLabel && chord && (
                   <span
                     className={cn(
-                      "font-semibold select-none tracking-tight leading-none truncate px-0.5 text-[18px] flex items-baseline",
+                      "font-semibold select-none tracking-tight leading-none truncate px-0.5 text-[24px] flex items-baseline",
                       isActive ? "text-primary" : "text-foreground/65",
                     )}
                     style={{ fontFamily: "'Inter', sans-serif" }}
                     dir="ltr"
                   >
                     {isRest ? (
-                      <span className="text-[18px]">𝄽</span>
+                      <span className="text-[24px]">𝄽</span>
                     ) : (
                       <>
                         {root}
