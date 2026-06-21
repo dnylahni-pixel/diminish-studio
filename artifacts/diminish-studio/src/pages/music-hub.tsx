@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SongRow } from "@/components/music-hub/SongRow";
+import { ArtistRow } from "@/components/music-hub/ArtistRow";
 
 const UNKNOWN_TIME_SIGNATURE = "نامشخص";
 
@@ -29,7 +30,7 @@ export function MusicHubPage() {
           : [];
 
   // ── group songs into horizontal rows ──────────────────────────────────────
-  const { byTimeSignature, byArtist, recentlyAdded } = useMemo(() => {
+  const { byTimeSignature, byArtist, recentlyAdded, artistEntries } = useMemo(() => {
     const timeSigMap = new Map<string, any[]>();
     const artistMap = new Map<string, any[]>();
 
@@ -44,9 +45,20 @@ export function MusicHubPage() {
     }
 
     // فقط هنرمندهایی که بیش از یک آهنگ دارن به‌عنوان دسته‌ی جدا نشون داده می‌شن
-    const artistEntries = Array.from(artistMap.entries())
+    const artistSongRows = Array.from(artistMap.entries())
       .filter(([name, list]) => name !== "Unknown Artist" && list.length > 1)
       .sort((a, b) => b[1].length - a[1].length);
+
+    // برای ردیف کارت‌های گرد هنرمندان: همه‌ی هنرمندان شناخته‌شده (حتی با ۱ آهنگ)
+    const artistCardEntries = Array.from(artistMap.entries())
+      .filter(([name]) => name !== "Unknown Artist")
+      .map(([name, list]) => ({
+        name,
+        // اگه بعداً جدول artists رو وصل کردی، اینجا عکس واقعی از song.artistImageUrl خونده می‌شه
+        imageUrl: list[0]?.artistImageUrl as string | undefined,
+        songCount: list.length,
+      }))
+      .sort((a, b) => b.songCount - a.songCount);
 
     // ریتم‌های رایج (۴/۴) رو اول نشون بده، بعد بقیه
     const timeSigEntries = Array.from(timeSigMap.entries()).sort((a, b) => {
@@ -60,7 +72,12 @@ export function MusicHubPage() {
     // جدیدترین‌ها: فرض بر اینه آرایه‌ی اصلی به ترتیب id/تاریخ مرتبه؛ آخرین ۱۲ تا
     const recent = [...songs].slice(-12).reverse();
 
-    return { byTimeSignature: timeSigEntries, byArtist: artistEntries, recentlyAdded: recent };
+    return {
+      byTimeSignature: timeSigEntries,
+      byArtist: artistSongRows,
+      recentlyAdded: recent,
+      artistEntries: artistCardEntries,
+    };
   }, [songs]);
 
   return (
@@ -120,15 +137,17 @@ export function MusicHubPage() {
           {search.trim() ? (
             <SongRow title={`نتایج برای "${search}"`} songs={songs} />
           ) : (
-            <>
-              <SongRow title="به‌تازگی اضافه‌شده" songs={recentlyAdded} />
-              {byTimeSignature.map(([label, list]) => (
-                <SongRow key={label} title={label} songs={list} />
-              ))}
-              {byArtist.map(([artist, list]) => (
-                <SongRow key={artist} title={artist} songs={list} />
-              ))}
-            </>
+           <>
+  <SongRow title="به‌تازگی اضافه‌شده" songs={recentlyAdded} />
+  <ArtistRow title="هنرمندان" artists={artistEntries} />
+  {byTimeSignature.map(([label, list]) => (
+    <SongRow key={label} title={label} songs={list} />
+  ))}
+  {byArtist.map(([artist, list]) => (
+    <SongRow key={artist} title={artist} songs={list} />
+  ))}
+</>
+
           )}
         </div>
       )}
