@@ -84,7 +84,8 @@ export function PlayerPage() {
   const lyricsRef   = useRef<HTMLDivElement>(null);
   const idleTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevBeat    = useRef(-1);
-  const prevChunk   = useRef(-1);
+  const prevWindowStart = useRef(0);
+
 
   // ── init volumes/muted from song ─────────────────────────────────────────
   useEffect(() => {
@@ -128,7 +129,7 @@ export function PlayerPage() {
     }
   }, playing);
 
-// ── timeline auto-scroll (SMART PAGE TURN WITH LOOKAHEAD) ──────────────
+// ── timeline auto-scroll (SMART PAGE TURN, measure-aware, half-window slide) ──────────────
   useEffect(() => {
     if (!timelineRef.current || !song?.beatGrid) return;
 
@@ -136,34 +137,29 @@ export function PlayerPage() {
     if (beatIdx < 0) return;
 
     const container = timelineRef.current;
-    // عرض کادر رو می‌گیریم تا رو هر صفحه‌نمایشی (گوشی یا مانیتور) درست کار کنه
+    const grid = song.beatGrid;
     const containerWidth = container.clientWidth || 800;
-    
-    // ۱. محاسبه اینکه کلاً چندتا واگن کامل تو این صفحه جا میشه
-    const visibleBeats = Math.floor(containerWidth / BEAT_W);
-    
-    // ۲. قانون طلایی: همیشه باید حداقل ۴ واگن (یک میزان) از آینده تو دید کاربر باشه
-    const lookahead = 4; 
-    
-    // ۳. پس هر بار که ورق می‌خوره، چندتا واگن باید بریم جلو؟
-    // (حداقل ۲ رو گذاشتم که اگه گوشی طرف خیلی باریک بود باگ نخوره)
-    const step = Math.max(2, visibleBeats - lookahead);
-    
-    // ۴. الان تو کدوم "بخش" از آهنگیم؟
-    const chunkIndex = Math.floor(beatIdx / step);
-    
-    // فقط وقتی chunk تغییر کرده اسکرول کن — نه هر فریم
-    if (chunkIndex === prevChunk.current) return;
-    prevChunk.current = chunkIndex;
-    
-    // ۵. نقطه دقیق اسکرول برای ورق خوردن
-    const firstBeatOfChunk = chunkIndex * step;
-    
-    // منهای یک می‌کنیم که موقع ورق خوردن، همیشه ۱ واگن قبلی هم تو تصویر بمونه
-    const targetScroll = Math.max(0, (firstBeatOfChunk - 1) * BEAT_W);
+    const visibleBeats = Math.max(4, Math.floor(containerWidth / BEAT_W) - 1); // -1 برای حاشیهی نیم‌بیتی هر طرف
 
-    container.scrollTo({ left: targetScroll, behavior: "instant" });
+    const windowStart = prevWindowStart.current;
+    const halfWindow = Math.floor(visibleBeats / 2);
+    const triggerPoint = windowStart + visibleBeats - halfWindow; // وقتی واردِ نیمه‌ی دوم پنجره شدیم
+
+    if (beatIdx < triggerPoint) return;
+
+    // باید جهش کنیم: نقطه‌ی شروع جدید = windowStart + halfWindow، اما اسنپ‌شده به نزدیک‌ترین شروع میزان
+    let newStart = windowStart + halfWindow;
+    while (newStart < grid.length && grid[newStart]?.beat !== 1) {
+      newStart++;
+    }
+    if (newStart >= grid.length || newStart <= windowStart) newStart = beatIdx; // fallback ایمن
+
+    prevWindowStart.current = newStart;
+
+    const targetScroll = Math.max(0, (newStart - 0.5) * BEAT_W);
+    container.scrollTo({ left: targetScroll, behavior: "smooth" });
   }, [displayTime, song]);
+
   
   // ── lyrics auto-scroll ────────────────────────────────────────────────────
   useEffect(() => {
