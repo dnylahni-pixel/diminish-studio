@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { TL_H, HEAD_X, BEAT_W, shiftChord } from "@/lib/player-utils";
+import { TL_H, HEAD_X, BEAT_W, shiftChord, parseChordDisplay } from "@/lib/player-utils";
 
 interface ChordTimelineProps {
   timelineRef: React.RefObject<HTMLDivElement | null>;
@@ -40,6 +40,8 @@ export function ChordTimeline({
             // بررسی برای نمایش فقط وقتی آکورد تغییر کرده
             const showLabel = bi === 0 || beatToChord[bi] !== beatToChord[bi - 1];
 
+            const { root, accidental, suffix, isRest } = parseChordDisplay(chord);
+
             return (
               <div
                 key={bi}
@@ -67,11 +69,19 @@ export function ChordTimeline({
                 {showLabel && chord && (
                   <span
                     className={cn(
-                      "font-mono font-semibold select-none tracking-tight leading-none truncate px-1 text-[13px]",
+                      "font-sans font-semibold select-none tracking-tight leading-none truncate px-1 text-[14px] flex items-baseline",
                       isActive ? "text-primary" : "text-foreground/65",
                     )}
                   >
-                    {chord}
+                    {isRest ? (
+                      <span className="text-[15px]">𝄽</span>
+                    ) : (
+                      <>
+                        {root}
+                        {accidental && <sup className="text-[10px] -ml-0.5">{accidental}</sup>}
+                        {suffix && <sup className="text-[10px] ml-0.5">{suffix}</sup>}
+                      </>
+                    )}
                   </span>
                 )}
               </div>
@@ -86,4 +96,3 @@ export function ChordTimeline({
     </div>
   );
 }
-
