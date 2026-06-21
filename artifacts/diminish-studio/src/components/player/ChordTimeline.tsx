@@ -85,7 +85,7 @@ export function ChordTimeline({
                     dir="ltr"
                   >
                     {isRest ? (
-  <span style={{ fontFamily: "'Noto Music', sans-serif" }}>𝄽</span>
+  <span style={{ fontFamily: "'Noto Music', sans-serif" }} className="text-[40px] leading-none text-foreground/40">𝄽</span>
 ) : (
 
                       <span className="flex items-baseline">
