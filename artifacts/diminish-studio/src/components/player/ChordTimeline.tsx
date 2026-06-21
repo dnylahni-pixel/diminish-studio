@@ -46,9 +46,10 @@ export function ChordTimeline({
             // استثنا: فقط وقتی suffix خودش طولانیه (مثل maj7, sus4) سایز رو کوچیک‌تر کن
             const isExtraLong = suffix.length >= 3;
 
-            const rootSize   = isExtraLong ? "text-[19px]" : "text-[24px]";
-            const accSize    = isExtraLong ? "text-[13px]" : "text-[17px]";
-            const suffixSize = isExtraLong ? "text-[13px]" : "text-[17px]";
+const rootSize   = isExtraLong ? "text-[22px]" : "text-[30px]";
+const accSize    = isExtraLong ? "text-[15px]" : "text-[20px]";
+const suffixSize = isExtraLong ? "text-[15px]" : "text-[20px]";
+
 
             return (
               <div
