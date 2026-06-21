@@ -55,25 +55,27 @@ const suffixSize = isExtraLong ? "text-[15px]" : "text-[20px]";
               <div
                 key={bi}
                 className={cn(
-  "flex-shrink-0 flex items-center justify-center relative",
+  "flex-shrink-0 flex items-center justify-center relative rounded-[2px]",
   isActive
     ? "bg-primary/25 dark:bg-primary/35"
     : "bg-muted/15 hover:bg-muted/25"
 )}
 
+
                 style={{ width: BEAT_W, height: TL_H }}
                 data-testid={`beat-${bi}`}
               >
                 {/* Separator line */}
-                <div
-                  className="absolute left-0 top-0 bottom-0"
-                  style={{
-                    width: isDownbeat ? "1.5px" : "0.5px",
-                    background: isDownbeat
-                      ? "hsl(var(--foreground) / 0.35)"
-                      : "hsl(var(--foreground) / 0.15)",
-                  }}
-                />
+<div
+  className="absolute left-0 top-0 bottom-0"
+  style={{
+    width: isDownbeat ? "2.5px" : "1px",
+    background: isDownbeat
+      ? "hsl(var(--foreground) / 0.5)"
+      : "hsl(var(--foreground) / 0.2)",
+  }}
+/>
+
                 
                 {/* Chord label */}
                 {showLabel && chord && (
