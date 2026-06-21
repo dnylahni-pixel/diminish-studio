@@ -118,16 +118,22 @@ export function PlayerPage() {
 
   // ── master clock: read from AudioEngine every frame ──────────────────────
   useAnimationFrame(() => {
-    if (!song) return;
-    const t = audioEngine.getCurrentTime();
-    timeRef.current = t;
-    setDisplayTime(t);
+  if (!song) return;
+  const t = audioEngine.getCurrentTime();
+  timeRef.current = t;
+  setDisplayTime(t);
 
-    if (t >= song.duration) {
-      audioEngine.pause();
-      setPlaying(false);
-    }
-  }, playing);
+  // اگه engine خودش دیگه پلی نیست (مثلاً به‌خاطر پایان طبیعی آهنگ)، React state رو sync کن
+  if (!audioEngine.getIsPlaying() && playing) {
+    setPlaying(false);
+    return;
+  }
+
+  if (t >= song.duration) {
+    audioEngine.pause();
+    setPlaying(false);
+  }
+}, playing);
 
 // ── timeline auto-scroll (SMART PAGE TURN, measure-aware, half-window slide) ──────────────
   useEffect(() => {
@@ -204,14 +210,16 @@ const triggerPoint = windowStart + Math.floor(visibleBeats * triggerRatio);
 
   // ── transport handlers (wired to AudioEngine) ────────────────────────────
   const handlePlayPause = useCallback(() => {
-    if (playing) {
-      audioEngine.pause();
-      setPlaying(false);
-    } else {
-      const ok = audioEngine.play(timeRef.current);
-      if (ok) setPlaying(true);
-    }
-  }, [playing]);
+  // همیشه از وضعیت واقعی engine بپرس، نه از React state که ممکنه stale باشه
+  const actuallyPlaying = audioEngine.getIsPlaying();
+  if (actuallyPlaying) {
+    audioEngine.pause();
+    setPlaying(false);
+  } else {
+    const ok = audioEngine.play(timeRef.current);
+    setPlaying(ok);
+  }
+}, []);
 
   const handleSeek = useCallback((newTime: number) => {
     audioEngine.seek(newTime);
