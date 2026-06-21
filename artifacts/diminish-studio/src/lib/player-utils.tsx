@@ -32,8 +32,14 @@ const QUALITY_MAP: Record<string, string> = {
   min6: "m6",
 };
 
+// "No chord" markers some models emit during silence/instrumental gaps
+const NO_CHORD_TOKENS = new Set(["N", "N.C.", "NC", "X"]);
+export const REST_SYMBOL = "𝄽"; // musical rest glyph
+
 export function normalizeChord(chord: string): string {
   if (!chord) return chord;
+  if (NO_CHORD_TOKENS.has(chord.trim().toUpperCase())) return REST_SYMBOL;
+
   const ci = chord.indexOf(":");
   if (ci === -1) return chord; // already in plain format, leave as-is
   const root = chord.slice(0, ci);
@@ -42,11 +48,85 @@ export function normalizeChord(chord: string): string {
   return `${root}${mapped}`;
 }
 
-export function shiftChord(chord: string, n: number) {
+// ─── Chord difficulty levels ───────────────────────────────────────────────
+export type ChordLevel = "simple" | "medium" | "pro";
+
+// Suffix patterns ordered from most-specific to least. Each entry maps a
+// normalized suffix to its simplified forms at "simple" and "medium" levels.
+// Quality (m/dim/aug) is always preserved; only extensions/alterations are stripped.
+interface SuffixRule {
+  match: RegExp;
+  simple: string;   // what survives at "simple" level
+  medium: string;   // what survives at "medium" level
+}
+
+const SUFFIX_RULES: SuffixRule[] = [
+  // dim7, m7b5 (half-diminished) — keep quality, drop extension at simple
+  { match: /^dim7$/,        simple: "dim",  medium: "dim7" },
+  { match: /^m7b5$/,        simple: "m",    medium: "m7b5" },
+  { match: /^aug$/,         simple: "aug",  medium: "aug" },
+  { match: /^dim$/,         simple: "dim",  medium: "dim" },
+
+  // sus chords — treat as their own quality, kept at medium, dropped to "" (major-ish) at simple
+  { match: /^sus2$/,        simple: "",     medium: "sus2" },
+  { match: /^sus4$/,        simple: "",     medium: "sus4" },
+
+  // 7th family — kept at medium, dropped at simple
+  { match: /^7$/,           simple: "",     medium: "7" },
+  { match: /^maj7$/,        simple: "",     medium: "maj7" },
+  { match: /^m7$/,          simple: "m",    medium: "m7" },
+
+  // 6th — kept at medium, dropped at simple
+  { match: /^6$/,           simple: "",     medium: "6" },
+  { match: /^m6$/,          simple: "m",    medium: "m6" },
+
+  // extensions (9/11/13/add9) — always dropped to base triad, even at medium
+  { match: /^9$/,           simple: "",     medium: "" },
+  { match: /^maj9$/,        simple: "",     medium: "" },
+  { match: /^m9$/,          simple: "m",    medium: "m" },
+  { match: /^add9$/,        simple: "",     medium: "" },
+  { match: /^11$/,          simple: "",     medium: "" },
+  { match: /^13$/,          simple: "",     medium: "" },
+
+  // bare minor/major (no extension at all)
+  { match: /^m$/,           simple: "m",    medium: "m" },
+  { match: /^$/,            simple: "",     medium: "" },
+];
+
+function splitChordSuffix(chord: string): { root: string; suffix: string; bass: string | null } {
+  // Handle slash chords (e.g. "C/E") — bass note is simplified separately
+  let bass: string | null = null;
+  let main = chord;
+  const si = chord.lastIndexOf("/");
+  if (si !== -1) {
+    bass = chord.slice(si + 1);
+    main = chord.slice(0, si);
+  }
+  const m = main.match(/^([A-G][#b]?)(.*)$/);
+  if (!m) return { root: main, suffix: "", bass };
+  const [, root, suffix] = m;
+  return { root, suffix, bass };
+}
+
+export function simplifyChord(chord: string, level: ChordLevel): string {
+  if (!chord || chord === REST_SYMBOL) return chord;
+  if (level === "pro") return chord;
+
+  const { root, suffix, bass } = splitChordSuffix(chord);
+  const rule = SUFFIX_RULES.find((r) => r.match.test(suffix));
+  const simplifiedSuffix = rule ? (level === "simple" ? rule.simple : rule.medium) : suffix; // unknown suffix: leave as-is
+
+  const simplifiedBass = bass ? bass : null; // bass note itself isn't a quality, keep as-is
+  return simplifiedBass ? `${root}${simplifiedSuffix}/${simplifiedBass}` : `${root}${simplifiedSuffix}`;
+}
+
+export function shiftChord(chord: string, n: number, level: ChordLevel = "pro") {
   const normalized = normalizeChord(chord);
-  if (n === 0) return normalized;
-  const m = normalized.match(/^([A-G][#b]?)(.*)$/);
-  if (!m) return normalized;
+  const leveled = simplifyChord(normalized, level);
+  if (n === 0) return leveled;
+  if (leveled === REST_SYMBOL) return leveled; // nothing to transpose
+  const m = leveled.match(/^([A-G][#b]?)(.*)$/);
+  if (!m) return leveled;
   const [, root, sfx] = m;
   if (sfx.includes("/")) {
     const si = sfx.lastIndexOf("/");
