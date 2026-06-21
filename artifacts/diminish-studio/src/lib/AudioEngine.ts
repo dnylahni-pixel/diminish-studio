@@ -26,6 +26,8 @@ class AudioEngine {
 
   // Track reference for ended event
   private referenceTrackId?: string;
+  private playGeneration: number = 0;
+
 
   constructor() {
     // ایجاد کانتکست (در اولین تعامل کاربر باید resume شود)
@@ -104,52 +106,50 @@ class AudioEngine {
 
   // ۲. متد اصلی پخش (پل بین بافر و خروجی)
   play(offset: number = 0): boolean {
-    if (this.isPlaying) return false;
+  if (this.isPlaying) return false;
+  if (!this.areAllTracksLoaded()) {
+    console.warn('Cannot play: not all tracks are loaded');
+    return false;
+  }
 
-    // Guard: check if all tracks are loaded
-    if (!this.areAllTracksLoaded()) {
-      console.warn('Cannot play: not all tracks are loaded');
-      return false;
+  this.context.resume();
+
+  // هر بار که play می‌شه، یه نسل جدید می‌سازیم تا onended قدیمی‌ها رو بشناسیم و نادیده بگیریم
+  this.playGeneration++;
+  const myGeneration = this.playGeneration;
+  
+  this.buffers.forEach((buffer, id) => {
+    const source = this.context.createBufferSource();
+    source.buffer = buffer;
+    
+    const gainNode = this.gainNodes.get(id);
+    if (gainNode) source.connect(gainNode);
+
+    if (id === this.referenceTrackId) {
+      source.onended = () => {
+        // اگه این source مال نسل قدیمی‌تره (یعنی دستی stop شده برای seek/pause جدید)، نادیده بگیر
+        if (myGeneration !== this.playGeneration) return;
+        if (this.isPlaying) {
+          this.sources.forEach(s => {
+            try { s.stop(); } catch (e) {}
+          });
+          this.sources.clear();
+          this.isPlaying = false;
+          this.pausedAt = 0;
+          this.onEndedCallback?.();
+        }
+      };
     }
 
-    this.context.resume(); // رفع محدودیت مرورگر
-    
-    this.buffers.forEach((buffer, id) => {
-      const source = this.context.createBufferSource();
-      source.buffer = buffer;
-      
-      // اتصال به گین نود مربوط به خودش
-      const gainNode = this.gainNodes.get(id);
-      if (gainNode) source.connect(gainNode);
+    source.start(0, offset);
+    this.sources.set(id, source);
+  });
 
-      // Setup onended handler for reference track
-      if (id === this.referenceTrackId) {
-        source.onended = () => {
-          if (this.isPlaying) {
-            this.sources.forEach(s => {
-              try {
-                s.stop();
-              } catch (e) {
-                // Already stopped
-              }
-            });
-            this.sources.clear();
-            this.isPlaying = false;
-            this.pausedAt = 0;
-            this.onEndedCallback?.();
-          }
-        };
-      }
+  this.startTime = this.context.currentTime - offset;
+  this.isPlaying = true;
+  return true;
+}
 
-      // شروع پخش از نقطه مشخص شده
-      source.start(0, offset);
-      this.sources.set(id, source);
-    });
-
-    this.startTime = this.context.currentTime - offset;
-    this.isPlaying = true;
-    return true;
-  }
 
   pause(): void {
     if (!this.isPlaying) return;
