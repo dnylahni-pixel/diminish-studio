@@ -241,6 +241,10 @@ class AudioEngine {
   isMuted(id: string): boolean {
     return this.mutedTracks.has(id);
   }
+    // Get internal playing state (source of truth)
+  getIsPlaying(): boolean {
+    return this.isPlaying;
+  }
 
   // Cleanup
   dispose(): void {
