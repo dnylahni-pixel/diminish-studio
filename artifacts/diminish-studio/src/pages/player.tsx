@@ -15,7 +15,8 @@ import {
   HEAD_X,
   LyricLine,
   ChordBeat,
-  AudioTrack
+  AudioTrack,
+  ChordLevel
 } from "@/lib/player-utils";
 
 import { PlayerHeader } from "@/components/player/PlayerHeader";
@@ -76,6 +77,7 @@ export function PlayerPage() {
   const [muted,       setMuted]       = useState<Record<number, boolean>>({});
   const [uiVisible,   setUiVisible]   = useState(true);
   const [analyzing,   setAnalyzing]   = useState(false);
+  const [chordLevel,  setChordLevel]  = useState<ChordLevel>("pro");
 
   const queryClient = useQueryClient();
   const timelineRef = useRef<HTMLDivElement>(null);
@@ -257,7 +259,7 @@ if (song?.beatGrid && timeline.length > 0) {
         lastChord = currentChord;
       }
       
-      beatToChord[beatIndex] = shiftChord(lastChord, semitones);
+      beatToChord[beatIndex] = shiftChord(lastChord, semitones, chordLevel);
     }
   }
 
@@ -296,6 +298,26 @@ if (song?.beatGrid && timeline.length > 0) {
             )}
             {analyzing ? "Analyzing..." : "Analyze Song"}
           </button>
+        </div>
+      )}
+
+      {/* Chord complexity level toggle */}
+      {song.beatGrid && song.beatGrid.length > 0 && (
+        <div className="flex-shrink-0 flex items-center justify-center gap-1 px-4 py-1">
+          {(["simple", "medium", "pro"] as ChordLevel[]).map((lvl) => (
+            <button
+              key={lvl}
+              onClick={() => setChordLevel(lvl)}
+              className={`text-xs font-medium px-3 py-1 rounded-md transition-colors ${
+                chordLevel === lvl
+                  ? "bg-amber-500/20 text-amber-600"
+                  : "text-muted-foreground hover:bg-muted"
+              }`}
+              data-testid={`btn-chord-level-${lvl}`}
+            >
+              {lvl === "simple" ? "ساده" : lvl === "medium" ? "متوسط" : "حرفه‌ای"}
+            </button>
+          ))}
         </div>
       )}
 
