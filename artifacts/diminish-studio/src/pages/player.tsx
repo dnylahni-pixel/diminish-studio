@@ -164,8 +164,24 @@ useEffect(() => {
 
     const windowStart = prevWindowStart.current;
     const halfWindow = Math.floor(visibleBeats / 2);
+    const windowEnd = windowStart + visibleBeats;
+
+    // اگه نشانگر کاملاً بیرون از پنجره‌ی فعلیه (seek دستی به جلو یا عقب)، فوراً ریست کن
+    const isOutsideWindow = beatIdx < windowStart || beatIdx >= windowEnd;
+
+    if (isOutsideWindow) {
+      let resetStart = Math.max(0, beatIdx - halfWindow);
+      while (resetStart > 0 && grid[resetStart]?.beat !== 1) {
+        resetStart--;
+      }
+      prevWindowStart.current = resetStart;
+      const resetScroll = Math.max(0, (resetStart - 0.5) * BEAT_W);
+      container.scrollTo({ left: resetScroll, behavior: "smooth" });
+      return;
+    }
+
     const triggerRatio = 0.8; // درصدی از پنجره که نشانگر باید طی کنه قبل از جهش (۰.۵ = وسط، ۰.۶ = کمی جلوتر از وسط)
-const triggerPoint = windowStart + Math.floor(visibleBeats * triggerRatio);
+    const triggerPoint = windowStart + Math.floor(visibleBeats * triggerRatio);
 
     if (beatIdx < triggerPoint) return;
 
@@ -181,6 +197,7 @@ const triggerPoint = windowStart + Math.floor(visibleBeats * triggerRatio);
     const targetScroll = Math.max(0, (newStart - 0.5) * BEAT_W);
     container.scrollTo({ left: targetScroll, behavior: "smooth" });
   }, [displayTime, song]);
+
 
   
   // ── lyrics auto-scroll ────────────────────────────────────────────────────
