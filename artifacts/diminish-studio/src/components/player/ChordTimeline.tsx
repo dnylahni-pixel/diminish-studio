@@ -12,10 +12,25 @@ interface ChordTimelineProps {
   timeSignature: { numerator: number; denominator: number };
 }
 
-function RestIcon({ className }: { className?: string }) {
+function RestIcon() {
   return (
-    <svg viewBox="0 0 24 24" className={className} fill="currentColor" style={{ display: "inline-block" }}>
-      <path d="M7 3c2.5 1.5 4 3.2 4 5 0 1.3-.9 2.1-2 3 1.7.4 3 1.6 3 3.3 0 1.5-1 2.4-1.9 3.2-.9.8-1.6 1.5-1.6 2.3 0 .6.4 1 .9 1.4l-.7.8c-.9-.6-1.7-1.4-1.7-2.5 0-1.1.8-1.9 1.7-2.7.9-.8 1.7-1.5 1.7-2.5 0-1.2-1.1-2-2.4-2.3l-.6-.1.5-.4c1.2-.9 1.9-1.6 1.9-2.5 0-1.2-1.1-2.6-3-3.9L7 3z"/>
+    <svg
+      viewBox="0 0 40 80"
+      width="28"
+      height="56"
+      fill="currentColor"
+    >
+      <path d="M24 4
+               C28 10 30 18 30 24
+               C30 30 24 34 20 40
+               C16 46 14 50 14 56
+               C14 64 20 70 28 74
+               L24 78
+               C14 74 8 66 8 56
+               C8 48 12 42 16 36
+               C20 30 24 26 24 20
+               C24 14 22 10 18 4
+               Z"/>
     </svg>
   );
 }
