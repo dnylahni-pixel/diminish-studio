@@ -77,6 +77,9 @@ export function PlayerPage() {
   const [muted,       setMuted]       = useState<Record<number, boolean>>({});
   const [uiVisible,   setUiVisible]   = useState(true);
   const [analyzing,   setAnalyzing]   = useState(false);
+  const [loadProgress, setLoadProgress] = useState<{ loaded: number; total: number }>({ loaded: 0, total: 0 });
+  const [tracksReady,  setTracksReady]  = useState(false);
+
   const [chordLevel,  setChordLevel]  = useState<ChordLevel>("pro");
 
   const queryClient = useQueryClient();
@@ -96,12 +99,24 @@ export function PlayerPage() {
   }, [song]);
 
   // ── load stems into AudioEngine ──────────────────────────────────────────
-  useEffect(() => {
-    if (!song?.tracks) return;
-    (song.tracks as AudioTrack[]).forEach(track => {
-      audioEngine.loadTrack(String(track.id), track.streamUrl);
-    });
-  }, [song]);
+useEffect(() => {
+  if (!song?.tracks) return;
+
+  setTracksReady(false);
+  setLoadProgress({ loaded: 0, total: (song.tracks as AudioTrack[]).length });
+
+  audioEngine.onLoadProgress(() => {
+    const progress = audioEngine.getLoadingProgress();
+    setLoadProgress(progress);
+    if (progress.total > 0 && progress.loaded === progress.total) {
+      setTracksReady(true);
+    }
+  });
+
+  (song.tracks as AudioTrack[]).forEach(track => {
+    audioEngine.loadTrack(String(track.id), track.streamUrl);
+  });
+}, [song]);
 
   // ── sync volumes/mute state -> AudioEngine ───────────────────────────────
   useEffect(() => {
@@ -355,22 +370,24 @@ if (song?.beatGrid && timeline.length > 0) {
       />
 
       <TransportControls
-        uiVisible={uiVisible}
-        time={displayTime}
-        setTime={handleSeek}
-        song={song}
-        resetIdle={resetIdle}
-        tempoDrag={tempoDrag}
-        bpmDisplay={bpmDisplay}
-        tempo={tempo}
-        setTempo={setTempo}
-        playing={playing}
-        setPlaying={handlePlayPause}
-        keyDrag={keyDrag}
-        keyDisplay={keyDisplay}
-        semitones={semitones}
-        setSemitones={setSemitones}
-      />
+  uiVisible={uiVisible}
+  time={displayTime}
+  setTime={handleSeek}
+  song={song}
+  resetIdle={resetIdle}
+  tempoDrag={tempoDrag}
+  bpmDisplay={bpmDisplay}
+  tempo={tempo}
+  setTempo={setTempo}
+  playing={playing}
+  setPlaying={handlePlayPause}
+  keyDrag={keyDrag}
+  keyDisplay={keyDisplay}
+  semitones={semitones}
+  setSemitones={setSemitones}
+  tracksReady={tracksReady}
+  loadProgress={loadProgress}
+/>
     </div>
   );
 }
