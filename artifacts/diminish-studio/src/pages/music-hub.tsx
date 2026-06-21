@@ -1,11 +1,18 @@
-import { useState } from "react";
-import { Link } from "wouter";
-import { Search, Filter, Play, Clock, Music } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Search, Filter } from "lucide-react";
 import { useListSongs } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
+import { SongRow } from "@/components/music-hub/SongRow";
+
+const UNKNOWN_TIME_SIGNATURE = "نامشخص";
+
+function timeSignatureLabel(song: any): string {
+  const ts = song.timeSignature;
+  if (!ts || !ts.numerator || !ts.denominator) return UNKNOWN_TIME_SIGNATURE;
+  return `ریتم ${ts.numerator}/${ts.denominator}`;
+}
 
 export function MusicHubPage() {
   const [search, setSearch] = useState("");
@@ -20,6 +27,41 @@ export function MusicHubPage() {
         : Array.isArray((data as any)?.data)
           ? (data as any).data
           : [];
+
+  // ── group songs into horizontal rows ──────────────────────────────────────
+  const { byTimeSignature, byArtist, recentlyAdded } = useMemo(() => {
+    const timeSigMap = new Map<string, any[]>();
+    const artistMap = new Map<string, any[]>();
+
+    for (const song of songs) {
+      const tsLabel = timeSignatureLabel(song);
+      if (!timeSigMap.has(tsLabel)) timeSigMap.set(tsLabel, []);
+      timeSigMap.get(tsLabel)!.push(song);
+
+      const artistLabel = song.artist || "Unknown Artist";
+      if (!artistMap.has(artistLabel)) artistMap.set(artistLabel, []);
+      artistMap.get(artistLabel)!.push(song);
+    }
+
+    // فقط هنرمندهایی که بیش از یک آهنگ دارن به‌عنوان دسته‌ی جدا نشون داده می‌شن
+    const artistEntries = Array.from(artistMap.entries())
+      .filter(([name, list]) => name !== "Unknown Artist" && list.length > 1)
+      .sort((a, b) => b[1].length - a[1].length);
+
+    // ریتم‌های رایج (۴/۴) رو اول نشون بده، بعد بقیه
+    const timeSigEntries = Array.from(timeSigMap.entries()).sort((a, b) => {
+      if (a[0] === "ریتم 4/4") return -1;
+      if (b[0] === "ریتم 4/4") return 1;
+      if (a[0] === UNKNOWN_TIME_SIGNATURE) return 1;
+      if (b[0] === UNKNOWN_TIME_SIGNATURE) return -1;
+      return 0;
+    });
+
+    // جدیدترین‌ها: فرض بر اینه آرایه‌ی اصلی به ترتیب id/تاریخ مرتبه؛ آخرین ۱۲ تا
+    const recent = [...songs].slice(-12).reverse();
+
+    return { byTimeSignature: timeSigEntries, byArtist: artistEntries, recentlyAdded: recent };
+  }, [songs]);
 
   return (
     <div className="p-6 md:p-10 max-w-7xl mx-auto">
@@ -48,86 +90,45 @@ export function MusicHubPage() {
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {[...Array(8)].map((_, i) => (
-            <div key={i} className="flex flex-col gap-3">
-              <Skeleton className="w-full aspect-square rounded-xl" />
-              <Skeleton className="h-5 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
+        <div className="space-y-7">
+          {[...Array(3)].map((_, rowIdx) => (
+            <div key={rowIdx}>
+              <Skeleton className="h-6 w-40 mb-3" />
+              <div className="flex gap-3.5 overflow-hidden">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="w-36 sm:w-40 flex-shrink-0 flex flex-col gap-2">
+                    <Skeleton className="w-full aspect-square rounded-lg" />
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
         </div>
       ) : error ? (
-        <div className="py-20 text-center text-red-400">
+        <div className="py-20 text-center text-destructive">
           Failed to load songs.
         </div>
+      ) : songs.length === 0 ? (
+        <div className="py-20 text-center text-muted-foreground">
+          No songs found. Try a different search.
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {songs.map((song: any) => (
-            <Link key={song.id} href={`/songs/${song.id}`}>
-              <div className="group cursor-pointer">
-                <div className="relative aspect-square rounded-xl overflow-hidden bg-muted mb-3 border border-border group-hover:border-primary/50 transition-colors">
-                  {song.coverUrl ? (
-                    <img
-                      src={song.coverUrl}
-                      alt={song.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-card">
-                      <Music className="w-12 h-12 text-muted-foreground/30" />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center transform translate-y-4 group-hover:translate-y-0 transition-all duration-300">
-                      <Play className="w-5 h-5 ml-1" />
-                    </div>
-                  </div>
-
-                  <div className="absolute top-3 left-3 flex gap-2">
-                    <Badge
-                      variant="secondary"
-                      className="bg-background/80 backdrop-blur text-xs font-mono"
-                    >
-                      {song.bpm} BPM
-                    </Badge>
-                  </div>
-                </div>
-
-                <h3 className="font-bold text-lg truncate">{song.title}</h3>
-                <p className="text-muted-foreground text-sm truncate">
-                  {song.artist || "Unknown Artist"}
-                </p>
-
-                <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    {Math.floor(song.duration / 60)}:
-                    {(song.duration % 60).toString().padStart(2, "0")}
-                  </span>
-                  <span className="px-2 py-0.5 rounded bg-secondary">
-                    {song.key}
-                  </span>
-                  <span
-                    className={`px-2 py-0.5 rounded ${
-                      song.difficulty === "beginner"
-                        ? "bg-green-500/20 text-green-400"
-                        : song.difficulty === "intermediate"
-                          ? "bg-yellow-500/20 text-yellow-400"
-                          : "bg-red-500/20 text-red-400"
-                    }`}
-                  >
-                    {song.difficulty}
-                  </span>
-                </div>
-              </div>
-            </Link>
-          ))}
-
-          {songs.length === 0 && (
-            <div className="col-span-full py-20 text-center text-muted-foreground">
-              No songs found. Try a different search.
-            </div>
+        <div>
+          {/* جستجو فعاله: یه گرید ساده از نتایج نشون بده، نه دسته‌بندی‌شده */}
+          {search.trim() ? (
+            <SongRow title={`نتایج برای "${search}"`} songs={songs} />
+          ) : (
+            <>
+              <SongRow title="به‌تازگی اضافه‌شده" songs={recentlyAdded} />
+              {byTimeSignature.map(([label, list]) => (
+                <SongRow key={label} title={label} songs={list} />
+              ))}
+              {byArtist.map(([artist, list]) => (
+                <SongRow key={artist} title={artist} songs={list} />
+              ))}
+            </>
           )}
         </div>
       )}
