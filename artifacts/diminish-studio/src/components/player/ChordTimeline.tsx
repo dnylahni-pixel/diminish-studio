@@ -42,6 +42,14 @@ export function ChordTimeline({
 
             const { root, accidental, suffix, isRest } = parseChordDisplay(chord);
 
+            // استثنا: فقط وقتی chord خیلی بلنده (مثل D♯maj7) سایز رو کوچیک‌تر کن
+            const visualLength = root.length + (accidental ? 1 : 0) + suffix.length;
+            const isExtraLong = visualLength >= 6;
+
+            const rootSize   = isExtraLong ? "text-[19px]" : "text-[24px]";
+            const accSize    = isExtraLong ? "text-[13px]" : "text-[17px]";
+            const suffixSize = isExtraLong ? "text-[13px]" : "text-[17px]";
+
             return (
               <div
                 key={bi}
@@ -69,26 +77,24 @@ export function ChordTimeline({
                 {showLabel && chord && (
                   <span
                     className={cn(
-                      "font-semibold select-none tracking-tight leading-none truncate px-0.5 text-[24px] flex items-baseline",
+                      "font-semibold select-none tracking-tight leading-none truncate px-0.5 flex items-baseline",
+                      rootSize,
                       isActive ? "text-primary" : "text-foreground/65",
                     )}
                     style={{ fontFamily: "'Inter', sans-serif" }}
                     dir="ltr"
                   >
                     {isRest ? (
-                      <span className="text-[24px]">𝄽</span>
+                      <span className={rootSize}>𝄽</span>
                     ) : (
                       <>
                         {root}
                         {accidental && (
-  <span className="text-[17px] leading-none -ml-0.5 -translate-y-0.5">{accidental}</span>
-)}
-
+                          <span className={cn(accSize, "leading-none -ml-0.5 -translate-y-0.5")}>{accidental}</span>
+                        )}
                         {suffix && (
-  <span className="text-[17px] leading-none ml-0.5 translate-y-0.5">{suffix}</span>
-)}
-
-
+                          <span className={cn(suffixSize, "leading-none ml-0.5 translate-y-0.5")}>{suffix}</span>
+                        )}
                       </>
                     )}
                   </span>
