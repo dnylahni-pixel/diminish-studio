@@ -11,10 +11,42 @@ export function shiftNote(note: string, n: number) {
   const i = CHROMATIC.indexOf(k);
   return i === -1 ? note : CHROMATIC[((i + n) % 12 + 12) % 12];
 }
+
+// Maps RunPod/ChordMini "root:quality" notation to standard chord notation
+const QUALITY_MAP: Record<string, string> = {
+  maj: "",
+  min: "m",
+  dim: "dim",
+  aug: "aug",
+  sus2: "sus2",
+  sus4: "sus4",
+  "7": "7",
+  maj7: "maj7",
+  min7: "m7",
+  dim7: "dim7",
+  "9": "9",
+  min9: "m9",
+  maj9: "maj9",
+  add9: "add9",
+  "6": "6",
+  min6: "m6",
+};
+
+export function normalizeChord(chord: string): string {
+  if (!chord) return chord;
+  const ci = chord.indexOf(":");
+  if (ci === -1) return chord; // already in plain format, leave as-is
+  const root = chord.slice(0, ci);
+  const quality = chord.slice(ci + 1);
+  const mapped = QUALITY_MAP[quality] ?? quality; // fallback: show raw quality if unmapped
+  return `${root}${mapped}`;
+}
+
 export function shiftChord(chord: string, n: number) {
-  if (n === 0) return chord;
-  const m = chord.match(/^([A-G][#b]?)(.*)$/);
-  if (!m) return chord;
+  const normalized = normalizeChord(chord);
+  if (n === 0) return normalized;
+  const m = normalized.match(/^([A-G][#b]?)(.*)$/);
+  if (!m) return normalized;
   const [, root, sfx] = m;
   if (sfx.includes("/")) {
     const si = sfx.lastIndexOf("/");
