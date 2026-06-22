@@ -50,7 +50,8 @@ const visualScore =
   suffix.length * 7;
 
 // چهار سطح بر اساس visualScore
-const isShort     = visualScore <= 23; // C, G, Cm, Gm, C#, D#m, C#m
+const isShort = visualScore <= 16;
+ // C, G, Cm, Gm, C#, D#m, C#m
 const isMedShort  = visualScore <= 31; // Bm7, Am7, Cmaj7 مرز
 const isExtraLong = visualScore >= 32; // Gmaj7, Cadd9, C#add9, C#maj7
 
