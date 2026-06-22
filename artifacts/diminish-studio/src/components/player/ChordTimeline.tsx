@@ -38,22 +38,19 @@ export function ChordTimeline({
 
             const { root, accidental, suffix, isRest } = parseChordDisplay(chord);
 
-            const visualScore =
-              root.length * 10 +
-              (accidental ? 6 : 0) +
-              (suffix === "m" ? 7 : 0);
-
-            const isShort    = visualScore <= 16;
-            const isMedShort = visualScore <= 24;
-
-            const rootSize = isShort ? "text-[32px]" : isMedShort ? "text-[26px]" : "text-[22px]";
-            const accSize  = isShort ? "text-[21px]" : isMedShort ? "text-[17px]" : "text-[15px]";
-            const mSize    = isShort ? "text-[21px]" : isMedShort ? "text-[17px]" : "text-[15px]";
-
-            const isInlineSuffix     = suffix === "m";
-            const isSingleCharSuffix = suffix.length === 1 && suffix !== "m";
-            const superSize          = isSingleCharSuffix ? "11px" : "9px";
-            const superBottom        = isShort ? "16px" : isMedShort ? "13px" : "10px";
+            // جداسازی m از بقیه افزونه‌ها (مثل تبدیل m7 به m پایین و 7 بالا)
+            let inlineSuffix = "";
+            let supSuffix = "";
+            if (suffix) {
+              if (suffix === "m") {
+                inlineSuffix = "m";
+              } else if (suffix.startsWith("m") && !suffix.startsWith("maj")) {
+                inlineSuffix = "m";
+                supSuffix = suffix.substring(1);
+              } else {
+                supSuffix = suffix;
+              }
+            }
 
             return (
               <div
@@ -82,7 +79,8 @@ export function ChordTimeline({
                 {showLabel && chord && (
                   <span
                     className={cn(
-                      "select-none leading-none px-0.5 flex items-end",
+                      // از items-baseline استفاده شد تا همه روی خط کرسی تراز شوند
+                      "select-none leading-none px-0.5 flex items-baseline justify-center",
                       isActive ? "text-primary" : "text-foreground/65",
                     )}
                     dir="ltr"
@@ -90,56 +88,58 @@ export function ChordTimeline({
                     {isRest ? (
                       <span
                         style={{ fontFamily: "'Noto Music', sans-serif" }}
-                        className={rootSize}
+                        className="text-[26px]"
                       >
                         𝄽
                       </span>
                     ) : (
                       <>
+                        {/* نت پایه */}
                         <span
-                          className={cn(rootSize, "font-bold leading-none")}
+                          className="text-[26px] font-bold leading-none"
                           style={{ fontFamily: "'Nunito', sans-serif" }}
                         >
                           {root}
                         </span>
 
+                        {/* دیز یا بمل */}
                         {accidental && (
                           <span
-                            className={cn(accSize, "font-bold leading-none")}
+                            className="text-[18px] font-bold leading-none"
                             style={{
                               fontFamily: "'Nunito', sans-serif",
-                              marginLeft: isShort ? "-3px" : "-2px",
-                              marginBottom: "1px",
+                              verticalAlign: "baseline",
                             }}
                           >
                             {accidental}
                           </span>
                         )}
 
-                        {suffix && (
-                          isInlineSuffix ? (
-                            <span
-                              className={cn(mSize, "font-semibold leading-none")}
-                              style={{
-                                fontFamily: "'Nunito', sans-serif",
-                                marginLeft: "1px",
-                              }}
-                            >
-                              {suffix}
-                            </span>
-                          ) : (
-                            <span
-                              className="font-semibold leading-none"
-                              style={{
-                                fontFamily: "'Nunito', sans-serif",
-                                fontSize: superSize,
-                                marginLeft: "1px",
-                                marginBottom: superBottom,
-                              }}
-                            >
-                              {suffix}
-                            </span>
-                          )
+                        {/* حرف m هم‌راستا با نت پایه */}
+                        {inlineSuffix && (
+                          <span
+                            className="text-[20px] font-semibold leading-none"
+                            style={{
+                              fontFamily: "'Nunito', sans-serif",
+                              marginLeft: "1px",
+                            }}
+                          >
+                            {inlineSuffix}
+                          </span>
+                        )}
+
+                        {/* افزونه‌های بالانویس مثل 7 یا maj7 */}
+                        {supSuffix && (
+                          <sup
+                            className="text-[16px] font-semibold"
+                            style={{
+                              fontFamily: "'Nunito', sans-serif",
+                              marginLeft: "1px",
+                              verticalAlign: "super",
+                            }}
+                          >
+                            {supSuffix}
+                          </sup>
                         )}
                       </>
                     )}
