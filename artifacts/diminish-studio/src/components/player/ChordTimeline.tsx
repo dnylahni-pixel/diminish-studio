@@ -106,8 +106,13 @@ const suffixSize = isExtraLong ? "text-[13px]" : isShort ? "text-[21px]" : isMed
 
                       <span className="flex items-baseline">
                         {root}
-                     {accidental && (
-  <span className={cn(accSize, "leading-none -ml-1.5 -translate-y-0.5")}>{accidental}</span>
+                    {accidental && (
+  <span
+    className={cn(accSize, "leading-none -translate-y-0.5")}
+    style={{ marginLeft: isShort ? "-4px" : isMedShort ? "-3px" : "-2px" }}
+  >
+    {accidental}
+  </span>
 )}
 
 
