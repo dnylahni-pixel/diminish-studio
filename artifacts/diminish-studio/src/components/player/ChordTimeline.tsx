@@ -107,8 +107,9 @@ const suffixSize = isExtraLong ? "text-[13px]" : isShort ? "text-[21px]" : isMed
                       <span className="flex items-baseline">
                         {root}
                      {accidental && (
-  <span className={cn(accSize, "leading-none -ml-0.5 -translate-y-0.5")}>{accidental}</span>
+  <span className={cn(accSize, "leading-none -ml-1.5 -translate-y-0.5")}>{accidental}</span>
 )}
+
 
 
                         {suffix && (
