@@ -43,24 +43,24 @@ export function ChordTimeline({
 
             const { root, accidental, suffix, isRest } = parseChordDisplay(chord);
 
-// suffixهایی که باید هم‌سطح root بمونن (نه superscript)
-const isInlineSuffix = suffix === "m" || suffix === "";
-
-            // استثنا: فقط وقتی suffix // امتیاز عرض بصری تقریبی برای فونت Nunito
+// امتیاز عرض بصری — فقط root و accidental و m تنها حساب می‌شن
 const visualScore =
   root.length * 10 +
   (accidental ? 6 : 0) +
-  suffix.length * 7;
+  (suffix === "m" ? 7 : 0);
 
-// چهار سطح بر اساس visualScore
-const isShort = visualScore <= 16;
- // C, G, Cm, Gm, C#, D#m, C#m
-const isMedShort  = visualScore <= 24;  // Bm7, Am7, Cmaj7 مرز
-const isExtraLong = visualScore >= 32; // Gmaj7, Cadd9, C#add9, C#maj7
+const isShort    = visualScore <= 16; // C, G, D, C#, D#
+const isMedShort = visualScore <= 24; // Cm, Gm, C#m, D#m
 
-const rootSize   = isExtraLong ? "text-[19px]" : isShort ? "text-[34px]" : isMedShort ? "text-[26px]" : "text-[24px]";
-const accSize    = isExtraLong ? "text-[13px]" : isShort ? "text-[23px]" : isMedShort ? "text-[17px]" : "text-[17px]";
-const suffixSize = isExtraLong ? "text-[13px]" : isShort ? "text-[21px]" : isMedShort ? "text-[16px]" : "text-[17px]";
+const rootSize = isShort ? "text-[32px]" : isMedShort ? "text-[26px]" : "text-[22px]";
+const accSize  = isShort ? "text-[21px]" : isMedShort ? "text-[17px]" : "text-[15px]";
+const mSize    = isShort ? "text-[21px]" : isMedShort ? "text-[17px]" : "text-[15px]";
+
+const isInlineSuffix = suffix === "m";
+const isSingleCharSuffix = suffix.length === 1 && suffix !== "m";
+const superSize = isSingleCharSuffix ? "11px" : "9px";
+const superBottom = isShort ? "16px" : isMedShort ? "13px" : "10px";
+
 
 
 
@@ -104,39 +104,36 @@ const suffixSize = isExtraLong ? "text-[13px]" : isShort ? "text-[21px]" : isMed
 
                     dir="ltr"
                   >
-                    {isRest ? (
-  <span style={{ fontFamily: "'Noto Music', sans-serif" }} className="text-[40px] leading-none text-foreground/40">𝄽</span>
+                   {isRest ? (
+  <span style={{ fontFamily: "'Noto Music', sans-serif" }} className={rootSize}>𝄽</span>
 ) : (
-
-                      <span className="flex items-baseline">
-                        {root}
-                    {accidental && (
-  <span
-    className={cn(accSize, "leading-none -translate-y-0.5")}
-    style={{ marginLeft: isShort ? "-4px" : isMedShort ? "-3px" : "-2px" }}
-  >
-    {accidental}
+  <span className="flex items-end" dir="ltr" style={{ fontFamily: "'Nunito', sans-serif" }}>
+    <span className={cn(rootSize, "font-bold leading-none")}>{root}</span>
+    {accidental && (
+      <span
+        className={cn(accSize, "font-bold leading-none")}
+        style={{ marginLeft: isShort ? "-3px" : "-2px", marginBottom: "1px" }}
+      >
+        {accidental}
+      </span>
+    )}
+    {suffix && (
+      isInlineSuffix ? (
+        <span className={cn(mSize, "font-semibold leading-none")} style={{ marginLeft: "1px" }}>
+          {suffix}
+        </span>
+      ) : (
+        <span
+          className="font-semibold leading-none"
+          style={{ fontSize: superSize, marginLeft: "1px", marginBottom: superBottom }}
+        >
+          {suffix}
+        </span>
+      )
+    )}
   </span>
 )}
 
-
-
-                       {suffix && (
-  isInlineSuffix ? (
-    <span className={cn(suffixSize, "leading-none ml-px")}>{suffix}</span>
-  ) : (
-    <span
-      className="leading-none font-semibold text-current opacity-80"
-      style={{
-        fontSize: isExtraLong ? "9px" : "10px",
-        marginLeft: "1px",
-        marginBottom: isShort ? "14px" : isMedShort ? "11px" : "9px",
-      }}
-    >
-      {suffix}
-    </span>
-  )
-)}
 
                       </span>
                     )}
