@@ -52,12 +52,13 @@ const visualScore =
 // چهار سطح بر اساس visualScore
 const isShort = visualScore <= 16;
  // C, G, Cm, Gm, C#, D#m, C#m
-const isMedShort  = visualScore <= 31; // Bm7, Am7, Cmaj7 مرز
+const isMedShort  = visualScore <= 24;  // Bm7, Am7, Cmaj7 مرز
 const isExtraLong = visualScore >= 32; // Gmaj7, Cadd9, C#add9, C#maj7
 
-const rootSize   = isExtraLong ? "text-[19px]" : isShort ? "text-[34px]" : isMedShort ? "text-[28px]" : "text-[24px]";
-const accSize    = isExtraLong ? "text-[13px]" : isShort ? "text-[23px]" : isMedShort ? "text-[19px]" : "text-[17px]";
-const suffixSize = isExtraLong ? "text-[13px]" : isShort ? "text-[21px]" : isMedShort ? "text-[18px]" : "text-[17px]";
+const rootSize   = isExtraLong ? "text-[19px]" : isShort ? "text-[34px]" : isMedShort ? "text-[26px]" : "text-[24px]";
+const accSize    = isExtraLong ? "text-[13px]" : isShort ? "text-[23px]" : isMedShort ? "text-[17px]" : "text-[17px]";
+const suffixSize = isExtraLong ? "text-[13px]" : isShort ? "text-[21px]" : isMedShort ? "text-[16px]" : "text-[17px]";
+
 
 
 
