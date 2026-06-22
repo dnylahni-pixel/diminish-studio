@@ -81,7 +81,8 @@ const suffixSize = isExtraLong ? "text-[15px]" : "text-[20px]";
                 {showLabel && chord && (
                   <span
                     className={cn(
-                      "font-semibold select-none tracking-tight leading-none truncate px-0.5 flex items-center",
+                      "font-bold select-none tracking-tight leading-none truncate px-0.5 flex items-baseline",
+
                       rootSize,
                       isActive ? "text-primary" : "text-foreground/65",
                     )}
