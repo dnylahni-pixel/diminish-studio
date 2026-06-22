@@ -85,7 +85,8 @@ const suffixSize = isExtraLong ? "text-[15px]" : "text-[20px]";
                       rootSize,
                       isActive ? "text-primary" : "text-foreground/65",
                     )}
-                    style={{ fontFamily: "'Inter', sans-serif" }}
+                    style={{ fontFamily: "'Nunito', sans-serif" }}
+
                     dir="ltr"
                   >
                     {isRest ? (
