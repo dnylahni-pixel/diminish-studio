@@ -43,12 +43,21 @@ export function ChordTimeline({
 
             const { root, accidental, suffix, isRest } = parseChordDisplay(chord);
 
-            // استثنا: فقط وقتی suffix خودش طولانیه (مثل maj7, sus4) سایز رو کوچیک‌تر کن
-            const isExtraLong = suffix.length >= 3;
+            // استثنا: فقط وقتی suffix // امتیاز عرض بصری تقریبی برای فونت Nunito
+const visualScore =
+  root.length * 10 +
+  (accidental ? 6 : 0) +
+  suffix.length * 7;
 
-const rootSize   = isExtraLong ? "text-[22px]" : "text-[30px]";
-const accSize    = isExtraLong ? "text-[15px]" : "text-[20px]";
-const suffixSize = isExtraLong ? "text-[15px]" : "text-[20px]";
+// چهار سطح بر اساس visualScore
+const isShort     = visualScore <= 10; // C, G, A, D, F, E, B
+const isMedShort  = visualScore <= 17; // Cm, Gm, C#, G#, A#
+const isExtraLong = visualScore >= 30; // Cmaj7, Cadd9, C#add9, C#maj7, Csus4
+
+const rootSize   = isExtraLong ? "text-[19px]" : isShort ? "text-[34px]" : isMedShort ? "text-[28px]" : "text-[24px]";
+const accSize    = isExtraLong ? "text-[13px]" : isShort ? "text-[23px]" : isMedShort ? "text-[19px]" : "text-[17px]";
+const suffixSize = isExtraLong ? "text-[13px]" : isShort ? "text-[21px]" : isMedShort ? "text-[18px]" : "text-[17px]";
+
 
 
             return (
