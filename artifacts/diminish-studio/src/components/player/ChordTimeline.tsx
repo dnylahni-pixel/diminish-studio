@@ -101,7 +101,7 @@ const suffixSize = isExtraLong ? "text-[15px]" : "text-[20px]";
 
 
                         {suffix && (
-                          <span className={cn(suffixSize, "leading-none ml-0.5")}>{suffix}</span>
+                         <span className={cn(suffixSize, "leading-none ml-px")}>{suffix}</span>
                         )}
                       </span>
                     )}
