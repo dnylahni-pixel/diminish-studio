@@ -43,6 +43,9 @@ export function ChordTimeline({
 
             const { root, accidental, suffix, isRest } = parseChordDisplay(chord);
 
+// suffixهایی که باید هم‌سطح root بمونن (نه superscript)
+const isInlineSuffix = suffix === "m" || suffix === "";
+
             // استثنا: فقط وقتی suffix // امتیاز عرض بصری تقریبی برای فونت Nunito
 const visualScore =
   root.length * 10 +
@@ -118,10 +121,23 @@ const suffixSize = isExtraLong ? "text-[13px]" : isShort ? "text-[21px]" : isMed
 
 
 
-                        {suffix && (
-<span className={cn(suffixSize, "leading-none ml-px")}>{suffix}</span> 
+                       {suffix && (
+  isInlineSuffix ? (
+    <span className={cn(suffixSize, "leading-none ml-px")}>{suffix}</span>
+  ) : (
+    <span
+      className="leading-none font-semibold text-current opacity-80"
+      style={{
+        fontSize: isExtraLong ? "9px" : "10px",
+        marginLeft: "1px",
+        marginBottom: isShort ? "14px" : isMedShort ? "11px" : "9px",
+      }}
+    >
+      {suffix}
+    </span>
+  )
+)}
 
-                        )}
                       </span>
                     )}
                   </span>
