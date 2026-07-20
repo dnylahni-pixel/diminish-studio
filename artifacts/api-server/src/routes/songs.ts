@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { songs, artists } from "@workspace/db";
-import { eq, like, or } from "drizzle-orm";
+import { eq, and, like, or } from "drizzle-orm";
 
 const router = Router();
 
@@ -28,7 +28,8 @@ router.get("/", async (req, res) => {
         updatedAt: songs.updatedAt,
       })
       .from(songs)
-      .leftJoin(artists, eq(songs.artistId, artists.id));
+      .leftJoin(artists, eq(songs.artistId, artists.id))
+      .where(eq(songs.status, "published"));
 
     let result = await query;
 

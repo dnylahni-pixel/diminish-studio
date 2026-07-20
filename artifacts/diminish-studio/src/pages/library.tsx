@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { Search, Filter, Play, Clock, Music } from "lucide-react";
-import { useListSongs } from "@workspace/api-client-react";
+import { useGetUserLibrary } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,9 +9,7 @@ import { Badge } from "@/components/ui/badge";
 
 export function LibraryPage() {
   const [search, setSearch] = useState("");
-  const { data, isLoading, error } = useListSongs({ search });
-
-  console.log("useListSongs response:", data);
+  const { data, isLoading, error } = useGetUserLibrary();
 
   const songs = Array.isArray(data)
     ? data
@@ -22,6 +20,13 @@ export function LibraryPage() {
         : Array.isArray((data as any)?.data)
           ? (data as any).data
           : [];
+
+  const filteredSongs = search.trim()
+    ? songs.filter((s: any) =>
+        s.title?.toLowerCase().includes(search.toLowerCase()) ||
+        s.artist?.toLowerCase().includes(search.toLowerCase())
+      )
+    : songs;
 
   return (
     <div className="p-6 md:p-10 max-w-7xl mx-auto">
@@ -65,7 +70,7 @@ export function LibraryPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {songs.map((song: any) => (
+          {filteredSongs.map((song: any) => (
             <Link key={song.id} href={`/songs/${song.id}`}>
               <div className="group cursor-pointer">
                 <div className="relative aspect-square rounded-xl overflow-hidden bg-muted mb-3 border border-border group-hover:border-primary/50 transition-colors">
@@ -123,7 +128,7 @@ export function LibraryPage() {
             </Link>
           ))}
 
-          {songs.length === 0 && (
+          {filteredSongs.length === 0 && (
             <div className="col-span-full py-20 text-center text-muted-foreground">
               No songs found. Try a different search.
             </div>

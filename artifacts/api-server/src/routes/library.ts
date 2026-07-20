@@ -12,8 +12,8 @@ declare global {
 import { Router } from "express";
 import { getAuth } from "@clerk/express";
 import { db } from "@workspace/db";
-import { libraryTable, songs, usersTable } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
+import { songs, artists, usersTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 
 const router = Router();
 
@@ -28,44 +28,39 @@ router.get("/", async (req, res) => {
     const { userId } = getAuth(req);
     if (!userId) return res.status(401).json({ error: "Unauthorized" });
     const dbUserId = await getDbUserId(userId);
-    const entries = await db.select().from(libraryTable).where(eq(libraryTable.userId, dbUserId));
-    const result = await Promise.all(entries.map(async (entry) => {
-      const [song] = await db.select().from(songsTable).where(eq(songsTable.id, entry.songId));
-      return { id: entry.id, songId: entry.songId, addedAt: entry.addedAt.toISOString(), song };
-    }));
-    return res.json(result);
+    const result = await db
+      .select({
+        id: songs.id,
+        title: songs.title,
+        artist: artists.name,
+        artistId: songs.artistId,
+        difficulty: songs.difficulty,
+        duration: songs.duration,
+        bpm: songs.bpm,
+        musicalKey: songs.musicalKey,
+        mode: songs.mode,
+        timeSignature: songs.timeSignature,
+        coverUrl: songs.coverUrl,
+        playCount: songs.playCount,
+        featured: songs.featured,
+        status: songs.status,
+        fileKey: songs.fileKey,
+        fileUrl: songs.fileUrl,
+        mimeType: songs.mimeType,
+        createdAt: songs.createdAt,
+        updatedAt: songs.updatedAt,
+      })
+      .from(songs)
+      .leftJoin(artists, eq(songs.artistId, artists.id))
+      .where(eq(songs.userId, dbUserId));
+
+    return res.json(result.map(s => ({
+      ...s,
+      key: s.musicalKey,
+    })));
   } catch (e) {
     console.error(e);
     return res.status(500).json({ error: "Failed to get library" });
-  }
-});
-
-router.post("/", async (req, res) => {
-  try {
-    const { userId } = getAuth(req);
-    if (!userId) return res.status(401).json({ error: "Unauthorized" });
-    const dbUserId = await getDbUserId(userId);
-    const { songId } = req.body;
-    const [entry] = await db.insert(libraryTable).values({ userId: dbUserId, songId }).returning();
-    const [song] = await db.select().from(songsTable).where(eq(songsTable.id, songId));
-    return res.status(201).json({ id: entry.id, songId: entry.songId, addedAt: entry.addedAt.toISOString(), song });
-  } catch (e) {
-    console.error(e);
-    return res.status(500).json({ error: "Failed to add to library" });
-  }
-});
-
-router.delete("/:songId", async (req, res) => {
-  try {
-    const { userId } = getAuth(req);
-    if (!userId) return res.status(401).json({ error: "Unauthorized" });
-    const dbUserId = await getDbUserId(userId);
-    const songId = parseInt(req.params.songId);
-    await db.delete(libraryTable).where(and(eq(libraryTable.userId, dbUserId), eq(libraryTable.songId, songId)));
-    return res.status(204).send();
-  } catch (e) {
-    console.error(e);
-    return res.status(500).json({ error: "Failed to remove from library" });
   }
 });
 
