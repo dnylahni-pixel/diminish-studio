@@ -19,8 +19,8 @@ export function ProcessPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const ALLOWED_EXTENSIONS = ['.mp3', '.wav', '.flac'];
-  const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+  const ALLOWED_EXTENSIONS = ['.mp3', '.wav', '.flac', '.m4a', '.ogg'];
+  const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB (matches server MAX_FILE_SIZE)
   const MAX_DURATION = 600; // 10 minutes in seconds
 
   const validateFileExtension = (file: File): boolean => {
@@ -55,7 +55,7 @@ export function ProcessPage() {
     if (!validateFileExtension(file)) {
       toast({
         title: "Invalid file format",
-        description: "Please upload MP3, WAV, or FLAC files only.",
+        description: "Please upload MP3, WAV, FLAC, M4A, or OGG files only.",
         variant: "destructive",
       });
       return false;
@@ -64,7 +64,7 @@ export function ProcessPage() {
     if (!validateFileSize(file)) {
       toast({
         title: "File too large",
-        description: `Maximum file size is 50MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB.`,
+        description: `Maximum file size is 100MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB.`,
         variant: "destructive",
       });
       return false;
@@ -146,8 +146,15 @@ export function ProcessPage() {
   const handleFileUpload = async () => {
     if (!selectedFile) return;
 
+    let uploadToken: string | null = null;
+
     try {
-      const { uploadUrl, songId } = await customFetch<{ uploadUrl: string; songId: number; fileKey: string }>('/api/uploads/presign', {
+      // Phase 1: Get presigned URL for quarantine bucket
+      const { uploadUrl, uploadToken: token, expiresAt } = await customFetch<{
+        uploadUrl: string;
+        uploadToken: string;
+        expiresAt: string;
+      }>('/api/uploads/presign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -158,22 +165,46 @@ export function ProcessPage() {
         }),
       });
 
+      uploadToken = token;
+
       toast({
         title: "Uploading...",
         description: "Uploading your file to storage.",
       });
 
+      // Phase 2: PUT file to presigned URL
       const uploadSuccess = await uploadFileToPresignedUrl(selectedFile, uploadUrl);
 
       if (!uploadSuccess) {
         throw new Error('Upload failed');
       }
 
+      toast({
+        title: "Processing...",
+        description: "Verifying upload and moving to library.",
+      });
+
+      // Phase 3: Confirm upload (validates & copies from quarantine → songs/)
+      const { songId, status } = await customFetch<{ songId: number; status: string }>('/api/uploads/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          uploadToken,
+          expectedSize: selectedFile.size,
+          expectedMime: selectedFile.type || 'audio/mpeg',
+          title: selectedFile.name.replace(/\.[^/.]+$/, ''), // filename without extension
+        }),
+      });
+
+      if (status !== 'uploaded') {
+        throw new Error(`Unexpected status: ${status}`);
+      }
+
       // Upload complete — show success and keep songId for redirect
       setUploadedSongId(songId);
       toast({
         title: "Upload complete!",
-        description: `${selectedFile.name} has been uploaded successfully.`,
+        description: `${selectedFile.name} has been added to your library.`,
       });
     } catch (error) {
       toast({
@@ -307,7 +338,7 @@ export function ProcessPage() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".mp3,.wav,.flac,audio/mpeg,audio/wav,audio/flac"
+                 accept=".mp3,.wav,.flac,.m4a,.ogg,audio/mpeg,audio/wav,audio/flac,audio/mp4,audio/ogg"
                 onChange={handleFileInputChange}
                 className="hidden"
               />
@@ -335,9 +366,9 @@ export function ProcessPage() {
                   <h3 className="text-xl font-bold mb-2">
                     {isDragging ? 'Drop your audio file' : 'Drag & Drop Audio'}
                   </h3>
-                  <p className="text-muted-foreground text-sm">
-                    Supports MP3, WAV, FLAC up to 50MB • Max 10 minutes
-                  </p>
+                   <p className="text-muted-foreground text-sm">
+                     Supports MP3, WAV, FLAC, M4A, OGG up to 100MB • Max 10 minutes
+                   </p>
                   <p className="text-primary text-sm font-medium mt-3">Click to browse files</p>
                 </>
               )}
