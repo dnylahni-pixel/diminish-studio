@@ -85,14 +85,12 @@ function validateEnv() {
   requireEnv("B2_KEY_ID");
   requireEnv("B2_APPLICATION_KEY");
   requireEnv("BUCKET_NAME");
-  requireEnv("QUARANTINE_BUCKET");
-  requireEnv("QUARANTINE_PREFIX");
   logger.info("All required S3 env vars are present");
 }
 
 validateEnv();
 
-// ─── S3 Clients ───────────────────────────────────────────
+// ─── S3 Client ────────────────────────────────────────────
 
 function createS3Client(): S3Client {
   return new S3Client({
@@ -109,8 +107,7 @@ function createS3Client(): S3Client {
 const s3Client = createS3Client();
 
 const BUCKET_NAME = process.env["BUCKET_NAME"]!;
-const QUARANTINE_BUCKET = process.env["QUARANTINE_BUCKET"]!;
-const QUARANTINE_PREFIX = process.env["QUARANTINE_PREFIX"]!;
+const QUARANTINE_PREFIX = "quarantine";
 
 // ─── Schemas ───────────────────────────────────────────────
 
@@ -162,7 +159,7 @@ async function verifyMagicBytes(key: string, ext: string): Promise<boolean> {
   try {
     const response = await s3Client.send(
       new GetObjectCommand({
-        Bucket: QUARANTINE_BUCKET,
+        Bucket: BUCKET_NAME,
         Key: key,
         Range: "bytes=0-15",
       }),
@@ -204,8 +201,9 @@ async function verifyMagicBytes(key: string, ext: string): Promise<boolean> {
 /**
  * POST /uploads/presign
  *
- * Phase 1: Returns a presigned URL pointing to the quarantine bucket.
- * No database record is created — prevents orphan rows.
+ * Phase 1: Returns a presigned URL pointing to the quarantine prefix
+ * within the same bucket. No database record is created — prevents
+ * orphan rows when the user abandons the upload.
  */
 router.post("/presign", async (req, res) => {
   try {
@@ -243,7 +241,7 @@ router.post("/presign", async (req, res) => {
     const quarantineKey = `${QUARANTINE_PREFIX}/${auth.userId}/${uploadToken}.${ext}`;
 
     const command = new PutObjectCommand({
-      Bucket: QUARANTINE_BUCKET,
+      Bucket: BUCKET_NAME,
       Key: quarantineKey,
       ContentType: mimeType,
       ContentLength: fileSize,
@@ -273,8 +271,8 @@ router.post("/presign", async (req, res) => {
  * POST /uploads/confirm
  *
  * Phase 2: Client calls after PUT to quarantine completes.
- * Validates size, magic bytes, then copies to main bucket,
- * inserts DB record, and cleans up quarantine.
+ * Validates size, magic bytes, then copies to the permanent
+ * `songs/` prefix, inserts DB record, and cleans up quarantine.
  */
 router.post("/confirm", async (req, res) => {
   let quarantineKey = "";
@@ -305,7 +303,7 @@ router.post("/confirm", async (req, res) => {
     try {
       const head = await s3Client.send(
         new HeadObjectCommand({
-          Bucket: QUARANTINE_BUCKET,
+          Bucket: BUCKET_NAME,
           Key: quarantineKey,
         }),
       );
@@ -328,7 +326,7 @@ router.post("/confirm", async (req, res) => {
       await s3Client
         .send(
           new DeleteObjectCommand({
-            Bucket: QUARANTINE_BUCKET,
+            Bucket: BUCKET_NAME,
             Key: quarantineKey,
           }),
         )
@@ -354,7 +352,7 @@ router.post("/confirm", async (req, res) => {
       await s3Client
         .send(
           new DeleteObjectCommand({
-            Bucket: QUARANTINE_BUCKET,
+            Bucket: BUCKET_NAME,
             Key: quarantineKey,
           }),
         )
@@ -381,12 +379,12 @@ router.post("/confirm", async (req, res) => {
 
     const finalKey = `songs/${auth.userId}/${song.id}.${ext}`;
 
-    // 6. Copy from quarantine → main bucket
+    // 6. Copy from quarantine → permanent location within the same bucket
     await s3Client.send(
       new CopyObjectCommand({
         Bucket: BUCKET_NAME,
         Key: finalKey,
-        CopySource: encodeURIComponent(`${QUARANTINE_BUCKET}/${quarantineKey}`),
+        CopySource: encodeURIComponent(`${BUCKET_NAME}/${quarantineKey}`),
         ContentType: expectedMime,
       }),
     );
@@ -409,7 +407,7 @@ router.post("/confirm", async (req, res) => {
     await s3Client
       .send(
         new DeleteObjectCommand({
-          Bucket: QUARANTINE_BUCKET,
+          Bucket: BUCKET_NAME,
           Key: quarantineKey,
         }),
       )
@@ -456,7 +454,7 @@ router.delete("/:uploadToken/:ext", async (req, res) => {
 
     await s3Client.send(
       new DeleteObjectCommand({
-        Bucket: QUARANTINE_BUCKET,
+        Bucket: BUCKET_NAME,
         Key: key,
       }),
     );
