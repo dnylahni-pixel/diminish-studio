@@ -1,11 +1,11 @@
 import { Router } from "express";
 import { getAuth } from "@clerk/express";
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { db } from "@workspace/db";
-import { songs, usersTable, songStems } from "@workspace/db";
+import { songs, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
 const router = Router();
@@ -102,21 +102,6 @@ router.post("/presign", async (req, res) => {
         userId: dbUserId,
       })
       .returning({ id: songs.id });
-
-    // Generate a signed GET URL for streaming the uploaded file
-    const getCommand = new GetObjectCommand({
-      Bucket: BUCKET_NAME,
-      Key: fileKey,
-    });
-    const streamUrl = await getSignedUrl(s3Client, getCommand, {
-      expiresIn: 3600, // 1 hour
-    });
-
-    // Insert into song_stems so the player can stream it immediately
-    await db.insert(songStems).values({
-      songId: song.id,
-      audioUrl: streamUrl,
-    });
 
     return res.json({ uploadUrl: presignedUrl, songId: song.id, fileKey });
   } catch (error) {

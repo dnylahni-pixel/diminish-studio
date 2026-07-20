@@ -2,6 +2,22 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { songs, artists, songAnalyses, songStems } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+
+const s3Client = new S3Client({
+  endpoint: process.env["B2_ENDPOINT"],
+  region: process.env["B2_REGION"],
+  credentials: {
+    accessKeyId: process.env["B2_KEY_ID"]!,
+    secretAccessKey: process.env["B2_APPLICATION_KEY"]!,
+  },
+  forcePathStyle: true,
+  requestChecksumCalculation: "WHEN_REQUIRED",
+  responseChecksumValidation: "WHEN_REQUIRED",
+});
+
+const BUCKET_NAME = process.env["BUCKET_NAME"]!;
 
 const router = Router();
 
@@ -45,6 +61,7 @@ router.get("/:id", async (req, res) => {
         coverUrl: songs.coverUrl,
         playCount: songs.playCount,
         featured: songs.featured,
+        fileKey: songs.fileKey,
         createdAt: songs.createdAt,
         updatedAt: songs.updatedAt,
       })
@@ -111,8 +128,21 @@ router.get("/:id", async (req, res) => {
       }
     }
 
-    // Add master track if available
-    if (stems?.audioUrl) {
+    // Generate fresh signed URL for master track (never expires in DB)
+    let masterStreamUrl: string | null = null;
+    if (songData.fileKey) {
+      masterStreamUrl = await getSignedUrl(
+        s3Client,
+        new GetObjectCommand({
+          Bucket: BUCKET_NAME,
+          Key: songData.fileKey,
+        }),
+        { expiresIn: 900 },
+      );
+    }
+
+    // Add master track with fresh signed URL
+    if (masterStreamUrl) {
       tracks.unshift({
         id: 0,
         instrument: "master",
@@ -121,7 +151,7 @@ router.get("/:id", async (req, res) => {
         muted: false,
         soloable: false,
         pan: 0,
-        streamUrl: stems.audioUrl,
+        streamUrl: masterStreamUrl,
         offset: 0.0,
         normalizationGain: 1.0,
         peaks: null,
@@ -161,8 +191,8 @@ router.get("/:id", async (req, res) => {
       // Tracks with stems
       tracks,
 
-      // Master track URL (convenience field)
-      masterTrackUrl: stems?.audioUrl || null,
+      // Master track URL — fresh signed URL (expiresIn 900s)
+      masterTrackUrl: masterStreamUrl,
 
       // Metadata
       playCount: songData.playCount,
