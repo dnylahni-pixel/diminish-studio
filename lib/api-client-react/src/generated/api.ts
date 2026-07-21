@@ -37,6 +37,7 @@ import type {
   RegisterInput,
   Song,
   SongDetail,
+  StorageQuota,
   User,
   UserUpdate
 } from './api.schemas';
@@ -966,6 +967,83 @@ export const useLoginUser = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getLoginUserMutationOptions(options));
     }
+
+export const getGetStorageQuotaUrl = () => {
+
+
+
+
+  return `/api/library/quota`
+}
+
+/**
+ * @summary Get user's storage quota and usage
+ */
+export const getStorageQuota = async ( options?: RequestInit): Promise<StorageQuota> => {
+
+  return customFetch<StorageQuota>(getGetStorageQuotaUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStorageQuotaQueryKey = () => {
+    return [
+    `/api/library/quota`
+    ] as const;
+    }
+
+
+export const getGetStorageQuotaQueryOptions = <TData = Awaited<ReturnType<typeof getStorageQuota>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStorageQuota>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStorageQuotaQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStorageQuota>>> = ({ signal }) => getStorageQuota({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStorageQuota>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStorageQuotaQueryResult = NonNullable<Awaited<ReturnType<typeof getStorageQuota>>>
+export type GetStorageQuotaQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get user's storage quota and usage
+ */
+
+export function useGetStorageQuota<TData = Awaited<ReturnType<typeof getStorageQuota>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStorageQuota>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStorageQuotaQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getGetUserLibraryUrl = () => {
 

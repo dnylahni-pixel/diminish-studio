@@ -31,5 +31,6 @@ export * from './registerInput';
 export * from './song';
 export * from './songDetail';
 export * from './songDifficulty';
+export * from './storageQuota';
 export * from './user';
 export * from './userUpdate';

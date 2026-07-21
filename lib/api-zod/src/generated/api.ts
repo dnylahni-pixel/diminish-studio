@@ -226,6 +226,15 @@ export const LoginUserResponse = zod.object({
 
 
 /**
+ * @summary Get user's storage quota and usage
+ */
+export const GetStorageQuotaResponse = zod.object({
+  "storageUsedBytes": zod.number().describe('Total bytes used by user\'s uploaded files'),
+  "storageQuotaBytes": zod.number().describe('Maximum bytes allowed for the user (configurable per-user)')
+})
+
+
+/**
  * @summary Get user's saved song library
  */
 export const GetUserLibraryResponseItem = zod.object({

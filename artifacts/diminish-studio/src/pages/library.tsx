@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { StorageQuotaBar } from "@/components/library/StorageQuotaBar";
 
 export function LibraryPage() {
   const [search, setSearch] = useState("");
@@ -30,6 +31,10 @@ export function LibraryPage() {
 
   return (
     <div className="p-6 md:p-10 max-w-7xl mx-auto">
+      <div className="mb-4">
+        <StorageQuotaBar />
+      </div>
+
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight mb-2">Music Hub</h1>

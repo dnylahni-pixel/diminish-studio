@@ -1,0 +1,2 @@
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "storage_used_bytes" bigint DEFAULT 0 NOT NULL;
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "storage_quota_bytes" bigint DEFAULT 1073741824 NOT NULL;

@@ -168,6 +168,13 @@ export interface LibraryEntry {
   song: Song;
 }
 
+export interface StorageQuota {
+  /** Total bytes used by user's uploaded files */
+  storageUsedBytes: number;
+  /** Maximum bytes allowed for the user (configurable per-user) */
+  storageQuotaBytes: number;
+}
+
 export interface LibraryInput {
   songId: number;
 }

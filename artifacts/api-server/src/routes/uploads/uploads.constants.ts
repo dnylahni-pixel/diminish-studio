@@ -9,6 +9,7 @@ export const ALLOWED_MIME_TYPES = [
 ] as const;
 
 export const MAX_FILE_SIZE = 104_857_600; // 100 MB
+export const DEFAULT_STORAGE_QUOTA_BYTES = 1_073_741_824; // 1 GB (default per-user quota)
 export const MAX_DURATION_SECONDS = 600; // 10 minutes
 export const PRESIGN_EXPIRY_SECONDS = 900; // 15 minutes
 

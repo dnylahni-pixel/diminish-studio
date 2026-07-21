@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, bigint } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -11,6 +11,12 @@ export const usersTable = pgTable("users", {
   avatarUrl: text("avatar_url"),
   bio: text("bio"),
   preferredInstrument: text("preferred_instrument"),
+  storageUsedBytes: bigint("storage_used_bytes", { mode: "number" })
+    .notNull()
+    .default(0),
+  storageQuotaBytes: bigint("storage_quota_bytes", { mode: "number" })
+    .notNull()
+    .default(1_073_741_824),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

@@ -64,4 +64,27 @@ router.get("/", async (req, res) => {
   }
 });
 
+router.get("/quota", async (req, res) => {
+  try {
+    const { userId } = getAuth(req);
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+    const dbUserId = await getDbUserId(userId);
+    const [user] = await db
+      .select({
+        storageUsedBytes: usersTable.storageUsedBytes,
+        storageQuotaBytes: usersTable.storageQuotaBytes,
+      })
+      .from(usersTable)
+      .where(eq(usersTable.id, dbUserId));
+    if (!user) return res.status(404).json({ error: "User not found" });
+    return res.json({
+      storageUsedBytes: user.storageUsedBytes,
+      storageQuotaBytes: user.storageQuotaBytes,
+    });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: "Failed to get storage quota" });
+  }
+});
+
 export default router;

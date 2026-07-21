@@ -247,6 +247,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/User"
 
+  /library/quota:
+    get:
+      operationId: getStorageQuota
+      tags: [library]
+      summary: Get user's storage quota and usage
+      responses:
+        "200":
+          description: Storage quota info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StorageQuota"
+
   /library:
     get:
       operationId: getUserLibrary
@@ -599,6 +612,17 @@ components:
           type: string
         song:
           $ref: "#/components/schemas/Song"
+
+    StorageQuota:
+      type: object
+      required: [storageUsedBytes, storageQuotaBytes]
+      properties:
+        storageUsedBytes:
+          type: integer
+          description: Total bytes used by user's uploaded files
+        storageQuotaBytes:
+          type: integer
+          description: Maximum bytes allowed for the user (configurable per-user)
 
     LibraryInput:
       type: object

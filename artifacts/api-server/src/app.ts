@@ -4,6 +4,7 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { runMigrations } from "@workspace/db/migrate";
 
 const app: Express = express();
 
@@ -33,5 +34,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(clerkMiddleware());
 
 app.use("/api", router);
+
+// Auto-run migrations on startup (idempotent via IF NOT EXISTS)
+runMigrations()
+  .then(() => logger.info("Migrations applied successfully"))
+  .catch((err: unknown) => logger.error({ err }, "Migration failed"));
 
 export default app;

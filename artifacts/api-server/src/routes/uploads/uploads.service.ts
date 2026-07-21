@@ -11,7 +11,16 @@ import {
   BUCKET_NAME,
   QUARANTINE_PREFIX,
 } from "./uploads.storage";
-import { getDbUserId, insertSong, finalizeSong } from "./uploads.repository";
+import { db } from "@workspace/db";
+import { songs } from "@workspace/db";
+import { eq } from "drizzle-orm";
+import {
+  getDbUserId,
+  insertSong,
+  finalizeSong,
+  getUserStorageInfo,
+  incrementStorageUsed,
+} from "./uploads.repository";
 import type { PresignBody, ConfirmBody } from "./uploads.schema";
 
 // ─── Rate Limiter ──────────────────────────────────────────
@@ -52,6 +61,32 @@ export async function handlePresign(body: PresignBody, userId: string) {
   const { fileSize, mimeType, duration } = body;
 
   const ext = MIME_TO_EXT[mimeType];
+
+  // Check storage quota (application-layer enforcement — UI-friendly error)
+  const dbUserId = await getDbUserId(userId);
+  if (dbUserId === null) {
+    return {
+      status: 404,
+      body: {
+        error: "User account not found.",
+        code: UploadErrorCode.ERR_USER_NOT_FOUND,
+      },
+    };
+  }
+  const { storageUsedBytes, storageQuotaBytes } =
+    await getUserStorageInfo(dbUserId);
+  if (storageUsedBytes + fileSize > storageQuotaBytes) {
+    return {
+      status: 413,
+      body: {
+        error: "Storage quota exceeded. Delete some files to upload more.",
+        code: UploadErrorCode.ERR_STORAGE_QUOTA_EXCEEDED,
+        storageUsedBytes,
+        storageQuotaBytes,
+      },
+    };
+  }
+
   const uploadToken = randomUUID();
   const quarantineKey = `${QUARANTINE_PREFIX}/${userId}/${uploadToken}.${ext}`;
 
@@ -165,7 +200,24 @@ export async function handleConfirm(body: ConfirmBody, userId: string) {
     status: "uploaded",
   });
 
-  // 9. Clean up quarantine
+  // 9. Atomic storage accounting (deepest enforcement layer)
+  const newUsed = await incrementStorageUsed(dbUserId, actualSize);
+  if (newUsed === null) {
+    // DB-level quota exceeded — this is the undeniable enforcement
+    // Roll back: delete the permanent object & song record
+    await deleteObject(finalKey).catch(() => {});
+    await db.delete(songs).where(eq(songs.id, song.id)).execute();
+    await deleteObject(quarantineKey).catch(() => {});
+    return {
+      status: 413,
+      body: {
+        error: "Storage quota exceeded. Delete some files to upload more.",
+        code: UploadErrorCode.ERR_STORAGE_QUOTA_EXCEEDED,
+      },
+    };
+  }
+
+  // 10. Clean up quarantine
   await deleteObject(quarantineKey).catch(() => {});
 
   return {
