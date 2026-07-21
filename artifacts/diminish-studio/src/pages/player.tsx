@@ -221,6 +221,16 @@ useEffect(() => {
   useEffect(() => { resetIdle(); }, [playing, resetIdle]);
   useEffect(() => () => { if (idleTimer.current) clearTimeout(idleTimer.current); }, []);
 
+  // ── cleanup audio on unmount ──────────────────────────────────────────────
+  useEffect(() => {
+    return () => {
+      audioEngine.pause();
+      setPlaying(false);
+      timeRef.current = 0;
+      setDisplayTime(0);
+    };
+  }, []);
+
   const tempoDrag = useDragChange(tempo, setTempo, 6, 0.05, 0.3, 2.0);
   const keyDrag   = useDragChange(semitones, setSemitones, 14, 1, -12, 12);
 

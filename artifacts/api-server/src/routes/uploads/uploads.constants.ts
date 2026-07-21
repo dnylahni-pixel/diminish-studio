@@ -1,5 +1,3 @@
-import { UploadErrorCode } from "./uploads.types";
-
 // ─── Constants ────────────────────────────────────────────
 
 export const ALLOWED_MIME_TYPES = [
