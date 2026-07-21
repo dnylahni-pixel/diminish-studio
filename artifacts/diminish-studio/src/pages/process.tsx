@@ -193,6 +193,7 @@ export function ProcessPage() {
           expectedSize: selectedFile.size,
           expectedMime: selectedFile.type || 'audio/mpeg',
           title: selectedFile.name.replace(/\.[^/.]+$/, ''), // filename without extension
+          duration: audioDuration,
         }),
       });
 

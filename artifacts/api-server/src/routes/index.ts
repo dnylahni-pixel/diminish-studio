@@ -6,7 +6,7 @@ import usersRouter from "./users";
 import libraryRouter from "./library";
 import chordsRouter from "./chords";
 import learningRouter from "./learning";
-import uploadsRouter from "./uploads";
+import uploadsRouter from "./uploads/uploads.route";
 import analyzeRouter from "./analyze";
 
 const router: IRouter = Router();
