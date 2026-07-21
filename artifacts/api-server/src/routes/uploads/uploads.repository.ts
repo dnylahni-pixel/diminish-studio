@@ -16,26 +16,80 @@ export interface UserStorageInfo {
 }
 
 /**
- * Calculate storage used by summing songs.file_size for a user.
- * This is the single source of truth — always reflects actual files on disk.
+ * Read storage info directly from the materialized counter on the users table.
+ * This is the fast path — O(1) single-row read.
  */
 export async function getStorageQuota(
   userId: number,
 ): Promise<UserStorageInfo> {
   const [row] = await db
     .select({
-      storageUsedBytes: sql<number>`COALESCE(SUM(${songs.fileSize}), 0)::bigint`,
+      storageUsedBytes: usersTable.storageUsedBytes,
       storageQuotaBytes: usersTable.storageQuotaBytes,
     })
     .from(usersTable)
-    .leftJoin(songs, eq(songs.userId, usersTable.id))
-    .where(eq(usersTable.id, userId))
-    .groupBy(usersTable.id);
-  
+    .where(eq(usersTable.id, userId));
+
   return {
     storageUsedBytes: row?.storageUsedBytes ?? 0,
     storageQuotaBytes: row?.storageQuotaBytes ?? 0,
   };
+}
+
+/**
+ * Atomic increment of the storage counter.
+ * Uses a SQL-level check (storage_quota_bytes >= storage_used_bytes + bytes)
+ * so that concurrent uploads cannot race past the quota.
+ * Returns the updated row count (1 = success, 0 = quota would be exceeded).
+ */
+export async function incrementStorageUsed(
+  userId: number,
+  bytes: number,
+): Promise<boolean> {
+  const result = await db.execute(
+    sql`UPDATE users
+        SET storage_used_bytes = storage_used_bytes + ${bytes}::bigint
+        WHERE id = ${userId}
+          AND storage_quota_bytes >= (storage_used_bytes + ${bytes}::bigint)
+        RETURNING id`,
+  );
+  return (result.rowCount ?? 0) > 0;
+}
+
+/**
+ * Decrement the storage counter when a song is deleted.
+ * Guards against going below zero.
+ */
+export async function decrementStorageUsed(
+  userId: number,
+  bytes: number,
+): Promise<void> {
+  await db.execute(
+    sql`UPDATE users
+        SET storage_used_bytes = GREATEST(0, storage_used_bytes - ${bytes}::bigint)
+        WHERE id = ${userId}`,
+  );
+}
+
+/**
+ * Reconcile the materialized counter with the actual sum of song file sizes.
+ * Call this from a cron job or admin endpoint to fix drift.
+ */
+export async function reconcileStorageUsed(
+  userId: number,
+): Promise<number> {
+  await db.execute(
+    sql`UPDATE users u
+        SET storage_used_bytes = COALESCE(
+          (SELECT SUM(s.file_size) FROM songs s WHERE s.user_id = u.id), 0
+        )
+        WHERE u.id = ${userId}`,
+  );
+  const [row] = await db
+    .select({ storageUsedBytes: usersTable.storageUsedBytes })
+    .from(usersTable)
+    .where(eq(usersTable.id, userId));
+  return row?.storageUsedBytes ?? 0;
 }
 
 export async function insertSong(values: {

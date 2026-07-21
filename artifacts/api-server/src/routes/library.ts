@@ -13,8 +13,26 @@ import { Router } from "express";
 import { getAuth } from "@clerk/express";
 import { db } from "@workspace/db";
 import { songs, artists, usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
-import { getStorageQuota } from "./uploads/uploads.repository";
+import { eq, and } from "drizzle-orm";
+import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import {
+  getStorageQuota,
+  decrementStorageUsed,
+} from "./uploads/uploads.repository";
+
+const s3Client = new S3Client({
+  endpoint: process.env["B2_ENDPOINT"],
+  region: process.env["B2_REGION"],
+  credentials: {
+    accessKeyId: process.env["B2_KEY_ID"]!,
+    secretAccessKey: process.env["B2_APPLICATION_KEY"]!,
+  },
+  forcePathStyle: true,
+  requestChecksumCalculation: "WHEN_REQUIRED",
+  responseChecksumValidation: "WHEN_REQUIRED",
+});
+
+const BUCKET_NAME = process.env["BUCKET_NAME"]!;
 
 const router = Router();
 
@@ -78,6 +96,53 @@ router.get("/quota", async (req, res) => {
   } catch (e) {
     console.error(e);
     return res.status(500).json({ error: "Failed to get storage quota" });
+  }
+});
+
+router.delete("/:id", async (req, res) => {
+  try {
+    const { userId } = getAuth(req);
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+    const songId = parseInt(req.params.id);
+    if (isNaN(songId)) return res.status(400).json({ error: "Invalid song ID" });
+
+    const dbUserId = await getDbUserId(userId);
+
+    // 1. Find song and verify ownership
+    const [song] = await db
+      .select({
+        id: songs.id,
+        fileKey: songs.fileKey,
+        fileSize: songs.fileSize,
+      })
+      .from(songs)
+      .where(and(eq(songs.id, songId), eq(songs.userId, dbUserId)));
+
+    if (!song) return res.status(404).json({ error: "Song not found" });
+
+    // 2. Delete from S3
+    if (song.fileKey) {
+      await s3Client
+        .send(
+          new DeleteObjectCommand({
+            Bucket: BUCKET_NAME,
+            Key: song.fileKey,
+          }),
+        )
+        .catch(() => {});
+    }
+
+    // 3. Delete song record from DB
+    await db.delete(songs).where(eq(songs.id, song.id));
+
+    // 4. Decrement storage counter (guards against negative)
+    await decrementStorageUsed(dbUserId, song.fileSize ?? 0);
+
+    return res.json({ deleted: true });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: "Failed to delete song" });
   }
 });
 

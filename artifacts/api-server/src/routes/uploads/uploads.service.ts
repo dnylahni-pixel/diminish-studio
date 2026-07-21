@@ -19,6 +19,7 @@ import {
   insertSong,
   finalizeSong,
   getStorageQuota,
+  incrementStorageUsed,
 } from "./uploads.repository";
 import type { PresignBody, ConfirmBody } from "./uploads.schema";
 
@@ -201,7 +202,22 @@ export async function handleConfirm(body: ConfirmBody, userId: string) {
     status: "uploaded",
   });
 
-  // 9. Clean up quarantine
+  // 9. Atomic quota enforcement — guard against concurrent uploads
+  const ok = await incrementStorageUsed(dbUserId, actualSize);
+  if (!ok) {
+    // Another upload raced past the quota — rollback song record + file
+    await db.delete(songs).where(eq(songs.id, song.id));
+    await deleteObject(finalKey).catch(() => {});
+    return {
+      status: 413,
+      body: {
+        error: "Storage quota exceeded after upload. Please try again.",
+        code: UploadErrorCode.ERR_STORAGE_QUOTA_EXCEEDED,
+      },
+    };
+  }
+
+  // 10. Clean up quarantine
   await deleteObject(quarantineKey).catch(() => {});
 
   return {
