@@ -12,7 +12,7 @@ declare global {
 import { Router } from "express";
 import { getAuth } from "@clerk/express";
 import { db } from "@workspace/db";
-import { songs, artists, usersTable } from "@workspace/db";
+import { songs, artists, usersTable, songAnalyses, songStems } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import {
@@ -33,6 +33,23 @@ const s3Client = new S3Client({
 });
 
 const BUCKET_NAME = process.env["BUCKET_NAME"]!;
+
+/** Extract the S3 object key from a full B2 URL */
+function extractKeyFromUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    // Path is /{bucket}/{key} or /{key} depending on endpoint style
+    const path = u.pathname.replace(/^\//, "");
+    // Remove bucket name prefix if present (path-style)
+    if (path.startsWith(BUCKET_NAME + "/")) {
+      return path.slice(BUCKET_NAME.length + 1);
+    }
+    // Virtual-hosted style: bucket is in hostname, path is just /key
+    return path || null;
+  } catch {
+    return null;
+  }
+}
 
 const router = Router();
 
@@ -109,7 +126,7 @@ router.delete("/:id", async (req, res) => {
 
     const dbUserId = await getDbUserId(userId);
 
-    // 1. Find song and verify ownership
+    // 1. Find song with stems info, verify ownership
     const [song] = await db
       .select({
         id: songs.id,
@@ -121,22 +138,46 @@ router.delete("/:id", async (req, res) => {
 
     if (!song) return res.status(404).json({ error: "Song not found" });
 
-    // 2. Delete from S3
+    // 2. Fetch stem file keys (to delete from S3)
+    const stemsToDelete: string[] = [];
     if (song.fileKey) {
-      await s3Client
-        .send(
-          new DeleteObjectCommand({
-            Bucket: BUCKET_NAME,
-            Key: song.fileKey,
-          }),
-        )
-        .catch(() => {});
+      stemsToDelete.push(song.fileKey);
+    }
+    const [stemRow] = await db
+      .select({
+        drumsUrl: songStems.drumsUrl,
+        bassUrl: songStems.bassUrl,
+        guitarUrl: songStems.guitarUrl,
+        pianoUrl: songStems.pianoUrl,
+        vocalUrl: songStems.vocalUrl,
+        otherUrl: songStems.otherUrl,
+      })
+      .from(songStems)
+      .where(eq(songStems.songId, songId));
+    if (stemRow) {
+      for (const url of Object.values(stemRow)) {
+        if (url && typeof url === "string") {
+          const key = extractKeyFromUrl(url);
+          if (key) stemsToDelete.push(key);
+        }
+      }
     }
 
-    // 3. Delete song record from DB
+    // 3. Delete all files from S3 (best-effort, non-blocking)
+    await Promise.allSettled(
+      stemsToDelete.map((key) =>
+        s3Client
+          .send(new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: key }))
+          .catch(() => {}),
+      ),
+    );
+
+    // 4. Delete related DB records (CASCADE not set, so delete explicitly)
+    await db.delete(songAnalyses).where(eq(songAnalyses.songId, songId));
+    await db.delete(songStems).where(eq(songStems.songId, songId));
     await db.delete(songs).where(eq(songs.id, song.id));
 
-    // 4. Decrement storage counter (guards against negative)
+    // 5. Decrement storage counter (guards against negative)
     await decrementStorageUsed(dbUserId, song.fileSize ?? 0);
 
     return res.json({ deleted: true });
