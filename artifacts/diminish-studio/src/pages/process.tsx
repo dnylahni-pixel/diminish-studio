@@ -1,11 +1,36 @@
 import { useState, useEffect, useRef } from "react";
-import { Upload as UploadIcon, Link as LinkIcon, Loader2, CheckCircle2 } from "lucide-react";
+import { Upload as UploadIcon, Link as LinkIcon, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { customFetch } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+
+const MIME_TO_EXT: Record<string, string> = {
+  "audio/mpeg": "mp3",
+  "audio/mp3": "mp3",
+  "audio/wav": "wav",
+  "audio/wave": "wav",
+  "audio/x-wav": "wav",
+  "audio/flac": "flac",
+  "audio/x-flac": "flac",
+  "audio/mp4": "m4a",
+  "audio/x-m4a": "m4a",
+  "audio/ogg": "ogg",
+  "audio/vorbis": "ogg",
+  "application/ogg": "ogg",
+};
 
 export function ProcessPage() {
   const [url, setUrl] = useState("");
@@ -16,7 +41,11 @@ export function ProcessPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [audioPreviewUrl, setAudioPreviewUrl] = useState<string | null>(null);
   const [audioDuration, setAudioDuration] = useState(0);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const xhrRef = useRef<XMLHttpRequest | null>(null);
+  const uploadTokenRef = useRef<string | null>(null);
+  const mimeTypeRef = useRef<string>("audio/mpeg");
   const { toast } = useToast();
 
   const ALLOWED_EXTENSIONS = ['.mp3', '.wav', '.flac', '.m4a', '.ogg'];
@@ -86,6 +115,7 @@ export function ProcessPage() {
   const uploadFileToPresignedUrl = async (file: File, presignedUrl: string): Promise<boolean> => {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
+      xhrRef.current = xhr;
 
       xhr.upload.addEventListener('progress', (e) => {
         if (e.lengthComputable) {
@@ -146,7 +176,8 @@ export function ProcessPage() {
   const handleFileUpload = async () => {
     if (!selectedFile) return;
 
-    let uploadToken: string | null = null;
+    const mimeType = selectedFile.type || "audio/mpeg";
+    mimeTypeRef.current = mimeType;
 
     try {
       // Phase 1: Get presigned URL for quarantine bucket
@@ -160,12 +191,12 @@ export function ProcessPage() {
         body: JSON.stringify({
           fileName: selectedFile.name,
           fileSize: selectedFile.size,
-          mimeType: selectedFile.type || 'audio/mpeg',
+          mimeType,
           duration: audioDuration,
         }),
       });
 
-      uploadToken = token;
+      uploadTokenRef.current = token;
 
       toast({
         title: "Uploading...",
@@ -189,7 +220,7 @@ export function ProcessPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          uploadToken,
+          uploadToken: token,
           expectedSize: selectedFile.size,
           expectedMime: selectedFile.type || 'audio/mpeg',
           title: selectedFile.name.replace(/\.[^/.]+$/, ''), // filename without extension
@@ -258,12 +289,59 @@ export function ProcessPage() {
     // URL-based processing removed — feature coming soon
   };
 
+  const handleCancelUpload = async () => {
+    setShowCancelDialog(false);
+
+    // 1. Abort XHR if uploading
+    if (xhrRef.current) {
+      xhrRef.current.abort();
+      xhrRef.current = null;
+    }
+
+    // 2. Tell server to remove quarantine object
+    const token = uploadTokenRef.current;
+    const ext = MIME_TO_EXT[mimeTypeRef.current] || "mp3";
+    if (token) {
+      customFetch(`/api/uploads/${token}/${ext}`, { method: "DELETE" }).catch(() => {});
+    }
+
+    // 3. Full client cleanup
+    if (audioPreviewUrl) {
+      URL.revokeObjectURL(audioPreviewUrl);
+    }
+    setAudioPreviewUrl(null);
+    setSelectedFile(null);
+    setUploadProgress(0);
+    setIsUploading(false);
+    uploadTokenRef.current = null;
+    mimeTypeRef.current = "audio/mpeg";
+
+    // 4. Reset file input so same file can be re-selected
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+
+    toast({
+      title: "Upload cancelled",
+      description: "All resources have been cleaned up.",
+    });
+  };
+
   const handleReset = () => {
+    if (audioPreviewUrl) {
+      URL.revokeObjectURL(audioPreviewUrl);
+    }
     setSelectedFile(null);
     setUploadedSongId(null);
     setUploadProgress(0);
     setIsUploading(false);
     setAudioPreviewUrl(null);
+    setShowCancelDialog(false);
+    uploadTokenRef.current = null;
+    xhrRef.current = null;
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   return (
@@ -400,27 +478,37 @@ export function ProcessPage() {
               </div>
             )}
 
-            {selectedFile && (
+            {selectedFile && !isUploading && (
               <Button 
                 onClick={() => {
                   setIsUploading(true);
                   handleFileUpload();
                 }}
-                className="mb-8 h-12 px-8 rounded-xl bg-primary text-primary-foreground font-bold shadow-[0_0_20px_-5px_var(--color-primary)]"
-                disabled={isUploading}
+                className="mb-4 h-12 px-8 rounded-xl bg-primary text-primary-foreground font-bold shadow-[0_0_20px_-5px_var(--color-primary)]"
               >
-                {isUploading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Uploading {uploadProgress}%
-                  </>
-                ) : (
-                  <>
-                    <UploadIcon className="w-5 h-5 mr-2" />
-                    Upload
-                  </>
-                )}
+                <UploadIcon className="w-5 h-5 mr-2" />
+                Upload
               </Button>
+            )}
+
+            {selectedFile && isUploading && (
+              <div className="flex gap-3 mb-8">
+                <Button 
+                  disabled
+                  className="h-12 px-8 rounded-xl bg-primary text-primary-foreground font-bold"
+                >
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Uploading {uploadProgress}%
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => setShowCancelDialog(true)}
+                  className="h-12 px-6 rounded-xl border-destructive text-destructive hover:bg-destructive/10 font-bold"
+                >
+                  <XCircle className="w-5 h-5 mr-2" />
+                  Cancel
+                </Button>
+              </div>
             )}
 
             <div className="flex items-center w-full gap-4 mb-8">
@@ -451,6 +539,27 @@ export function ProcessPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Upload?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel this upload? All progress will be lost
+              and any uploaded data will be cleaned up from storage.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Continue Upload</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancelUpload}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Yes, Cancel Upload
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
