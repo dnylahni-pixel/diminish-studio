@@ -14,6 +14,7 @@ import { getAuth } from "@clerk/express";
 import { db } from "@workspace/db";
 import { songs, artists, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { getStorageQuota } from "./uploads/uploads.repository";
 
 const router = Router();
 
@@ -69,17 +70,10 @@ router.get("/quota", async (req, res) => {
     const { userId } = getAuth(req);
     if (!userId) return res.status(401).json({ error: "Unauthorized" });
     const dbUserId = await getDbUserId(userId);
-    const [user] = await db
-      .select({
-        storageUsedBytes: usersTable.storageUsedBytes,
-        storageQuotaBytes: usersTable.storageQuotaBytes,
-      })
-      .from(usersTable)
-      .where(eq(usersTable.id, dbUserId));
-    if (!user) return res.status(404).json({ error: "User not found" });
+    const quota = await getStorageQuota(dbUserId);
     return res.json({
-      storageUsedBytes: user.storageUsedBytes,
-      storageQuotaBytes: user.storageQuotaBytes,
+      storageUsedBytes: quota.storageUsedBytes,
+      storageQuotaBytes: quota.storageQuotaBytes,
     });
   } catch (e) {
     console.error(e);

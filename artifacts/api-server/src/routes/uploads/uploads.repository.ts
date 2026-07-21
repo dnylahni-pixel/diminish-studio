@@ -15,42 +15,27 @@ export interface UserStorageInfo {
   storageQuotaBytes: number;
 }
 
-export async function getUserStorageInfo(
+/**
+ * Calculate storage used by summing songs.file_size for a user.
+ * This is the single source of truth — always reflects actual files on disk.
+ */
+export async function getStorageQuota(
   userId: number,
 ): Promise<UserStorageInfo> {
   const [row] = await db
     .select({
-      storageUsedBytes: usersTable.storageUsedBytes,
+      storageUsedBytes: sql<number>`COALESCE(SUM(${songs.fileSize}), 0)::bigint`,
       storageQuotaBytes: usersTable.storageQuotaBytes,
     })
     .from(usersTable)
-    .where(eq(usersTable.id, userId));
-  return row ?? { storageUsedBytes: 0, storageQuotaBytes: 0 };
-}
-
-/**
- * Atomically increment storage_used_bytes for a user — ONLY if the user has
- * enough remaining quota.  Returns the new storage_used_bytes on success,
- * or null when the quota would be exceeded.
- *
- * This is the deepest enforcement layer: even if the application-layer check
- * is bypassed, the DB WHERE clause guarantees atomic quota enforcement.
- */
-export async function incrementStorageUsed(
-  userId: number,
-  bytes: number,
-): Promise<number | null> {
-  const [row] = await db
-    .update(usersTable)
-    .set({
-      storageUsedBytes: sql`${usersTable.storageUsedBytes} + ${bytes}`,
-    })
-    .where(
-      sql`${usersTable.id} = ${userId}
-        AND ${usersTable.storageUsedBytes} + ${bytes} <= ${usersTable.storageQuotaBytes}`,
-    )
-    .returning({ storageUsedBytes: usersTable.storageUsedBytes });
-  return row?.storageUsedBytes ?? null;
+    .leftJoin(songs, eq(songs.userId, usersTable.id))
+    .where(eq(usersTable.id, userId))
+    .groupBy(usersTable.id);
+  
+  return {
+    storageUsedBytes: row?.storageUsedBytes ?? 0,
+    storageQuotaBytes: row?.storageQuotaBytes ?? 0,
+  };
 }
 
 export async function insertSong(values: {
@@ -60,6 +45,7 @@ export async function insertSong(values: {
   status: string;
   duration: number;
   mimeType: string;
+  fileSize: number;
   userId: number;
 }) {
   return db
@@ -71,6 +57,7 @@ export async function insertSong(values: {
       status: values.status,
       duration: values.duration,
       mimeType: values.mimeType,
+      fileSize: values.fileSize,
       userId: values.userId,
     })
     .returning({ id: songs.id });

@@ -18,8 +18,7 @@ import {
   getDbUserId,
   insertSong,
   finalizeSong,
-  getUserStorageInfo,
-  incrementStorageUsed,
+  getStorageQuota,
 } from "./uploads.repository";
 import type { PresignBody, ConfirmBody } from "./uploads.schema";
 
@@ -63,6 +62,7 @@ export async function handlePresign(body: PresignBody, userId: string) {
   const ext = MIME_TO_EXT[mimeType];
 
   // Check storage quota (application-layer enforcement — UI-friendly error)
+  // Computed from actual songs.file_size SUM via getStorageQuota
   const dbUserId = await getDbUserId(userId);
   if (dbUserId === null) {
     return {
@@ -74,7 +74,7 @@ export async function handlePresign(body: PresignBody, userId: string) {
     };
   }
   const { storageUsedBytes, storageQuotaBytes } =
-    await getUserStorageInfo(dbUserId);
+    await getStorageQuota(dbUserId);
   if (storageUsedBytes + fileSize > storageQuotaBytes) {
     return {
       status: 413,
@@ -181,6 +181,7 @@ export async function handleConfirm(body: ConfirmBody, userId: string) {
     status: "pending",
     duration,
     mimeType: expectedMime,
+    fileSize: actualSize,
     userId: dbUserId,
   });
 
@@ -193,31 +194,14 @@ export async function handleConfirm(body: ConfirmBody, userId: string) {
   const baseUrl = `${process.env["B2_ENDPOINT"]}/${BUCKET_NAME}`;
   const fileUrl = `${baseUrl}/${finalKey}`;
 
-  // 8. Finalize song record
+  // 8. Finalize song record (fileSize already saved in step 5)
   await finalizeSong(song.id, {
     fileKey: finalKey,
     fileUrl,
     status: "uploaded",
   });
 
-  // 9. Atomic storage accounting (deepest enforcement layer)
-  const newUsed = await incrementStorageUsed(dbUserId, actualSize);
-  if (newUsed === null) {
-    // DB-level quota exceeded — this is the undeniable enforcement
-    // Roll back: delete the permanent object & song record
-    await deleteObject(finalKey).catch(() => {});
-    await db.delete(songs).where(eq(songs.id, song.id)).execute();
-    await deleteObject(quarantineKey).catch(() => {});
-    return {
-      status: 413,
-      body: {
-        error: "Storage quota exceeded. Delete some files to upload more.",
-        code: UploadErrorCode.ERR_STORAGE_QUOTA_EXCEEDED,
-      },
-    };
-  }
-
-  // 10. Clean up quarantine
+  // 9. Clean up quarantine
   await deleteObject(quarantineKey).catch(() => {});
 
   return {
