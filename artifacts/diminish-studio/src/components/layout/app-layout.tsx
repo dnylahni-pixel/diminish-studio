@@ -5,6 +5,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/hooks/use-theme";
+import { UploadIndicator } from "@/components/layout/upload-indicator";
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
@@ -95,77 +96,90 @@ const navItems = [
           })}
         </nav>
 
-        {/* Bottom: theme toggle */}
-        <div className={cn(
-          "flex-shrink-0 px-2 py-3 border-t border-sidebar-border",
-          collapsed ? "flex justify-center" : "flex items-center justify-between px-3"
-        )}>
-          {!collapsed && (
-            <span className="text-[10px] text-sidebar-foreground/40 tracking-widest uppercase">
-              v1.0.0
-            </span>
+        {/* Bottom: upload indicator + theme toggle */}
+        <div
+          className={cn(
+            "flex-shrink-0 border-t border-sidebar-border",
+            collapsed ? "px-2 py-2 flex flex-col items-center gap-2" : "px-3 py-2 flex flex-col gap-1"
           )}
-          <button
-            onClick={toggle}
-            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-            className="text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors p-1.5 rounded-md hover:bg-sidebar-accent/40"
-          >
-            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
+        >
+          <UploadIndicator compact />
+
+          <div className={cn(
+            "flex",
+            collapsed ? "justify-center" : "items-center justify-between"
+          )}>
+            {!collapsed && (
+              <span className="text-[10px] text-sidebar-foreground/40 tracking-widest uppercase">
+                v1.0.0
+              </span>
+            )}
+            <button
+              onClick={toggle}
+              title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              className="text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors p-1.5 rounded-md hover:bg-sidebar-accent/40"
+            >
+              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
       </aside>
 
-      {/* ── Mobile Header ────────────────────────────────────────────────── */}
+        {/* ── Mobile Header ────────────────────────────────────────────────── */}
       <div
-        className="md:hidden fixed top-0 left-0 right-0 border-b border-border bg-background/90 backdrop-blur-md z-50 flex items-end justify-between px-4 pb-2"
+        className="md:hidden fixed top-0 left-0 right-0 border-b border-border bg-background/90 backdrop-blur-md z-50 flex flex-col"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.5rem)" }}
       >
-        <div className="flex items-center gap-1">
-          <button
-            onClick={toggle}
-            className="text-foreground/60 hover:text-foreground transition-colors p-1.5"
-          >
-            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
-          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-foreground">
-                <Menu className="w-5 h-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-56 border-r-border bg-sidebar">
-              <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground p-4 gap-5">
-                <div className="flex items-center gap-2 px-1">
-                  <div className="bg-primary/20 p-1.5 rounded-lg text-primary">
-                    <Music className="w-4 h-4" />
+        <div className="flex items-end justify-between px-4 pb-2">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={toggle}
+              className="text-foreground/60 hover:text-foreground transition-colors p-1.5"
+            >
+              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-foreground">
+                  <Menu className="w-5 h-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="p-0 w-56 border-r-border bg-sidebar">
+                <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground p-4 gap-5">
+                  <div className="flex items-center gap-2 px-1">
+                    <div className="bg-primary/20 p-1.5 rounded-lg text-primary">
+                      <Music className="w-4 h-4" />
+                    </div>
+                    <span className="font-bold text-sm tracking-tight">DiminishStudio</span>
                   </div>
-                  <span className="font-bold text-sm tracking-tight">DiminishStudio</span>
+                  <nav className="flex flex-col gap-1">
+                    {navItems.map((item) => {
+                      const isActive = location.startsWith(item.href);
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setSheetOpen(false)}
+                          className={cn(
+                            "flex items-center gap-3 px-3 py-2.5 rounded-md transition-all text-sm font-medium",
+                            isActive
+                              ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                              : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+                          )}
+                        >
+                          <item.icon className="w-4 h-4" />
+                          {item.label}
+                        </Link>
+                      );
+                    })}
+                  </nav>
                 </div>
-                <nav className="flex flex-col gap-1">
-                  {navItems.map((item) => {
-                    const isActive = location.startsWith(item.href);
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={() => setSheetOpen(false)}
-                        className={cn(
-                          "flex items-center gap-3 px-3 py-2.5 rounded-md transition-all text-sm font-medium",
-                          isActive
-                            ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                            : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
-                        )}
-                      >
-                        <item.icon className="w-4 h-4" />
-                        {item.label}
-                      </Link>
-                    );
-                  })}
-                </nav>
-              </div>
-            </SheetContent>
-          </Sheet>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
+        {/* Upload indicator in mobile header (non-compact) */}
+        <UploadIndicator compact={false} />
       </div>
 
       {/* ── Main Content ─────────────────────────────────────────────────── */}

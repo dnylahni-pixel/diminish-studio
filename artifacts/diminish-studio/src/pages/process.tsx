@@ -16,6 +16,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useUploadStore } from "@/stores/uploadStore";
 
 const MIME_TO_EXT: Record<string, string> = {
   "audio/mpeg": "mp3",
@@ -34,11 +35,8 @@ const MIME_TO_EXT: Record<string, string> = {
 
 export function ProcessPage() {
   const [url, setUrl] = useState("");
-  const [uploadedSongId, setUploadedSongId] = useState<number | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
   const [audioPreviewUrl, setAudioPreviewUrl] = useState<string | null>(null);
   const [audioDuration, setAudioDuration] = useState(0);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -48,9 +46,17 @@ export function ProcessPage() {
   const mimeTypeRef = useRef<string>("audio/mpeg");
   const { toast } = useToast();
 
+  const uploadStore = useUploadStore();
+
   const ALLOWED_EXTENSIONS = ['.mp3', '.wav', '.flac', '.m4a', '.ogg'];
   const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB (matches server MAX_FILE_SIZE)
   const MAX_DURATION = 600; // 10 minutes in seconds
+
+  // ── Sync: if there's an active upload in the store, we show its progress ──
+  const isUploading = uploadStore.status === "uploading" || uploadStore.status === "processing";
+  const uploadProgress = uploadStore.progress;
+  const uploadedSongId = uploadStore.status === "completed" ? uploadStore.completedSongId : null;
+  const uploadStoreFileName = uploadStore.fileName;
 
   const validateFileExtension = (file: File): boolean => {
     const fileName = file.name.toLowerCase();
@@ -121,13 +127,14 @@ export function ProcessPage() {
         if (e.lengthComputable) {
           // Cap at 95% during upload — last 5% is server ack (YouTube/Drive pattern)
           const rawPercent = (e.loaded / e.total) * 100;
-          setUploadProgress(Math.min(95, Math.round(rawPercent)));
+          const capped = Math.min(95, Math.round(rawPercent));
+          uploadStore.setProgress(capped);
         }
       });
 
       xhr.addEventListener('load', () => {
         if (xhr.status >= 200 && xhr.status < 300) {
-          setUploadProgress(100);
+          uploadStore.setProgress(100);
           resolve(true);
         } else {
           reject(new Error(`Upload failed with status ${xhr.status}`));
@@ -147,6 +154,11 @@ export function ProcessPage() {
   const handleFileSelect = async (file: File) => {
     const isValid = await handleFileValidation(file);
     if (!isValid) return;
+
+    // If there's an old completed/error state from a previous upload, dismiss it
+    if (uploadStore.status === "completed" || uploadStore.status === "error") {
+      uploadStore.reset();
+    }
 
     setSelectedFile(file);
 
@@ -179,6 +191,9 @@ export function ProcessPage() {
     const mimeType = selectedFile.type || "audio/mpeg";
     mimeTypeRef.current = mimeType;
 
+    // ── Start upload in global store ──
+    uploadStore.startUpload(selectedFile.name, selectedFile.size);
+
     try {
       // Phase 1: Get presigned URL for quarantine bucket
       const { uploadUrl, uploadToken: token, expiresAt } = await customFetch<{
@@ -210,6 +225,9 @@ export function ProcessPage() {
         throw new Error('Upload failed');
       }
 
+      // ── Transition to processing phase in store ──
+      uploadStore.setProcessing();
+
       toast({
         title: "Processing...",
         description: "Verifying upload and moving to library.",
@@ -232,16 +250,22 @@ export function ProcessPage() {
         throw new Error(`Unexpected status: ${status}`);
       }
 
-      // Upload complete — show success and keep songId for redirect
-      setUploadedSongId(songId);
+      // ── Upload complete in global store ──
+      uploadStore.completeUpload(songId);
+
       toast({
         title: "Upload complete!",
         description: `${selectedFile.name} has been added to your library.`,
       });
     } catch (error) {
+      const msg = error instanceof Error ? error.message : "Could not upload your file.";
+
+      // ── Upload failed in global store ──
+      uploadStore.failUpload(msg);
+
       toast({
         title: "Upload failed",
-        description: error instanceof Error ? error.message : "Could not upload your file.",
+        description: msg,
         variant: "destructive",
       });
       setSelectedFile(null);
@@ -311,8 +335,6 @@ export function ProcessPage() {
     }
     setAudioPreviewUrl(null);
     setSelectedFile(null);
-    setUploadProgress(0);
-    setIsUploading(false);
     uploadTokenRef.current = null;
     mimeTypeRef.current = "audio/mpeg";
 
@@ -320,6 +342,9 @@ export function ProcessPage() {
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+
+    // 5. Reset global store
+    uploadStore.reset();
 
     toast({
       title: "Upload cancelled",
@@ -332,9 +357,6 @@ export function ProcessPage() {
       URL.revokeObjectURL(audioPreviewUrl);
     }
     setSelectedFile(null);
-    setUploadedSongId(null);
-    setUploadProgress(0);
-    setIsUploading(false);
     setAudioPreviewUrl(null);
     setShowCancelDialog(false);
     uploadTokenRef.current = null;
@@ -342,7 +364,12 @@ export function ProcessPage() {
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+    // Reset global store
+    uploadStore.reset();
   };
+
+  // ── Determine the file name to display (local file takes precedence) ──
+  const displayFileName = selectedFile?.name || uploadStoreFileName;
 
   return (
     <div className="p-6 md:p-10 max-w-4xl mx-auto min-h-[calc(100vh-4rem)] flex flex-col">
@@ -370,9 +397,9 @@ export function ProcessPage() {
                     <CheckCircle2 className="w-12 h-12" />
                   </div>
                   <h2 className="text-3xl font-bold mb-2">Upload Complete!</h2>
-                  <p className="text-muted-foreground mb-1">{selectedFile?.name}</p>
+                  <p className="text-muted-foreground mb-1">{displayFileName}</p>
                   <p className="text-muted-foreground text-sm">
-                    {selectedFile ? (selectedFile.size / 1024 / 1024).toFixed(2) : ''}MB
+                    {uploadStore.fileSize ? (uploadStore.fileSize / 1024 / 1024).toFixed(2) : ''}MB
                   </p>
                 </motion.div>
                 
@@ -393,6 +420,100 @@ export function ProcessPage() {
                     Upload Another
                   </Button>
                 </div>
+              </div>
+            </div>
+          </motion.div>
+        ) : uploadStore.status === "error" ? (
+          <motion.div 
+            key="error"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            className="flex-1 flex flex-col items-center justify-center max-w-2xl mx-auto w-full"
+          >
+            <div className="w-full bg-card border border-card-border p-12 rounded-3xl text-center shadow-2xl relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-b from-red-500/10 to-transparent opacity-50" />
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent" />
+              
+              <div className="relative z-10">
+                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="mb-8">
+                  <div className="w-24 h-24 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6 text-red-500 shadow-[0_0_40px_-10px_rgba(239,68,68,0.5)]">
+                    <XCircle className="w-12 h-12" />
+                  </div>
+                  <h2 className="text-3xl font-bold mb-2">Upload Failed</h2>
+                  <p className="text-muted-foreground mb-1">{displayFileName}</p>
+                  <p className="text-red-400 text-sm mb-4">{uploadStore.errorMessage}</p>
+                </motion.div>
+                
+                <div className="flex gap-4 justify-center">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="h-12 px-8 font-bold"
+                    onClick={handleReset}
+                  >
+                    Try Again
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        ) : isUploading ? (
+          <motion.div 
+            key="uploading"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            className="flex-1 flex flex-col items-center justify-center max-w-2xl mx-auto w-full"
+          >
+            <div className="w-full bg-card border border-card-border p-12 rounded-3xl text-center shadow-2xl relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-b from-primary/10 to-transparent opacity-50" />
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent" />
+              
+              <div className="relative z-10">
+                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="mb-8">
+                  <div className="w-24 h-24 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-6 text-primary">
+                    {uploadStore.status === "processing" ? (
+                      <Loader2 className="w-12 h-12 animate-spin" />
+                    ) : (
+                      <UploadIcon className="w-12 h-12" />
+                    )}
+                  </div>
+                  <h2 className="text-3xl font-bold mb-2">
+                    {uploadStore.status === "processing" ? "Processing..." : "Uploading..."}
+                  </h2>
+                  <p className="text-muted-foreground mb-1">{displayFileName}</p>
+                  
+                  {/* Progress bar */}
+                  <div className="w-full max-w-md mx-auto mt-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-primary">
+                        {uploadProgress >= 95 && uploadProgress < 100
+                          ? "Finalizing..."
+                          : uploadStore.status === "processing"
+                            ? "Verifying upload..."
+                            : "Uploading..."}
+                      </span>
+                      <span className="text-sm font-mono text-primary">{uploadProgress}%</span>
+                    </div>
+                    <Progress 
+                      value={uploadProgress} 
+                      className="h-2 bg-muted"
+                    />
+                  </div>
+                </motion.div>
+
+                {/* Show cancel only if XHR is still alive (uploading phase, not processing) */}
+                {uploadStore.status === "uploading" && xhrRef.current && (
+                  <Button 
+                    variant="outline"
+                    onClick={() => setShowCancelDialog(true)}
+                    className="h-12 px-6 rounded-xl border-destructive text-destructive hover:bg-destructive/10 font-bold"
+                  >
+                    <XCircle className="w-5 h-5 mr-2" />
+                    Cancel Upload
+                  </Button>
+                )}
               </div>
             </div>
           </motion.div>
@@ -463,25 +584,9 @@ export function ProcessPage() {
               </div>
             )}
 
-            {selectedFile && isUploading && (
-              <div className="w-full max-w-md mx-auto mb-6">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-primary">
-                    {uploadProgress >= 95 && uploadProgress < 100 ? "Finalizing..." : "Uploading..."}
-                  </span>
-                  <span className="text-sm font-mono text-primary">{uploadProgress}%</span>
-                </div>
-                <Progress 
-                  value={uploadProgress} 
-                  className="h-2 bg-muted"
-                />
-              </div>
-            )}
-
-            {selectedFile && !isUploading && (
+            {selectedFile && (
               <Button 
                 onClick={() => {
-                  setIsUploading(true);
                   handleFileUpload();
                 }}
                 className="mb-4 h-12 px-8 rounded-xl bg-primary text-primary-foreground font-bold shadow-[0_0_20px_-5px_var(--color-primary)]"
@@ -489,26 +594,6 @@ export function ProcessPage() {
                 <UploadIcon className="w-5 h-5 mr-2" />
                 Upload
               </Button>
-            )}
-
-            {selectedFile && isUploading && (
-              <div className="flex gap-3 mb-8">
-                <Button 
-                  disabled
-                  className="h-12 px-8 rounded-xl bg-primary text-primary-foreground font-bold"
-                >
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Uploading {uploadProgress}%
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => setShowCancelDialog(true)}
-                  className="h-12 px-6 rounded-xl border-destructive text-destructive hover:bg-destructive/10 font-bold"
-                >
-                  <XCircle className="w-5 h-5 mr-2" />
-                  Cancel
-                </Button>
-              </div>
             )}
 
             <div className="flex items-center w-full gap-4 mb-8">
