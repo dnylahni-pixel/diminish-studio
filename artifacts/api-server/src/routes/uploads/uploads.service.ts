@@ -15,12 +15,12 @@ import { db } from "@workspace/db";
 import { songs } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import {
-  getDbUserId,
   insertSong,
   finalizeSong,
   getStorageQuota,
   incrementStorageUsed,
 } from "./uploads.repository";
+import { getOrCreateUser } from "../../lib/user-utils";
 import type { PresignBody, ConfirmBody } from "./uploads.schema";
 
 // ─── Rate Limiter ──────────────────────────────────────────
@@ -64,8 +64,11 @@ export async function handlePresign(body: PresignBody, userId: string) {
 
   // Check storage quota (application-layer enforcement — UI-friendly error)
   // Computed from actual songs.file_size SUM via getStorageQuota
-  const dbUserId = await getDbUserId(userId);
-  if (dbUserId === null) {
+  let dbUserId: number;
+  try {
+    const dbUser = await getOrCreateUser(userId);
+    dbUserId = dbUser.id;
+  } catch {
     return {
       status: 404,
       body: {
@@ -149,9 +152,12 @@ export async function handleConfirm(body: ConfirmBody, userId: string) {
     };
   }
 
-  // 3. Verify DB user exists
-  const dbUserId = await getDbUserId(userId);
-  if (dbUserId === null) {
+  // 3. Verify DB user exists (auto-create if new user)
+  let dbUserId: number;
+  try {
+    const dbUser = await getOrCreateUser(userId);
+    dbUserId = dbUser.id;
+  } catch {
     return {
       status: 404,
       body: {

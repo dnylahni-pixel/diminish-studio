@@ -2,6 +2,12 @@ import { db } from "@workspace/db";
 import { songs, usersTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 
+/**
+ * @deprecated Use getOrCreateUser() from lib/user-utils instead.
+ * This function only looks up an existing user row and returns
+ * its numeric ID, or null if not found. It does NOT auto-create.
+ * Kept for backward-compatibility with any non-migrated callers.
+ */
 export async function getDbUserId(clerkUserId: string): Promise<number | null> {
   const [user] = await db
     .select()

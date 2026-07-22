@@ -19,6 +19,8 @@ import {
   getStorageQuota,
   decrementStorageUsed,
 } from "./uploads/uploads.repository";
+import { getOrCreateUser } from "../lib/user-utils";
+import { ClerkServiceError, ClerkErrorKind } from "../lib/errors";
 
 const s3Client = new S3Client({
   endpoint: process.env["B2_ENDPOINT"],
@@ -53,17 +55,50 @@ function extractKeyFromUrl(url: string): string | null {
 
 const router = Router();
 
-async function getDbUserId(clerkUserId: string): Promise<number> {
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkUserId));
-  if (!user) throw new Error("User not found");
-  return user.id;
+/**
+ * Resolve the DB user row. For read operations we auto-create on first visit.
+ * For destructive operations (DELETE) callers should use a separate lookup-only path.
+ */
+async function resolveDbUser(clerkUserId: string) {
+  return getOrCreateUser(clerkUserId);
+}
+
+/** Look up a user row WITHOUT auto-create (for destructive / sensitive operations) */
+async function findDbUser(clerkUserId: string) {
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.clerkId, clerkUserId));
+  return user ?? null;
+}
+
+/** Map a ClerkServiceError into a response-contract shape */
+function clerkErrorToResponse(err: ClerkServiceError) {
+  switch (err.kind) {
+    case ClerkErrorKind.NotFound:
+      return { status: 401, body: { error: "Invalid session" } };
+    case ClerkErrorKind.RateLimited:
+      return {
+        status: 429,
+        body: {
+          error: "Authentication service busy",
+          retryAfterSeconds: 60,
+        },
+      };
+    case ClerkErrorKind.Unavailable:
+    default:
+      return {
+        status: 502,
+        body: { error: "Authentication service unavailable" },
+      };
+  }
 }
 
 router.get("/", async (req, res) => {
   try {
     const { userId } = getAuth(req);
     if (!userId) return res.status(401).json({ error: "Unauthorized" });
-    const dbUserId = await getDbUserId(userId);
+    const dbUser = await resolveDbUser(userId);
     const result = await db
       .select({
         id: songs.id,
@@ -88,13 +123,19 @@ router.get("/", async (req, res) => {
       })
       .from(songs)
       .leftJoin(artists, eq(songs.artistId, artists.id))
-      .where(eq(songs.userId, dbUserId));
+      .where(eq(songs.userId, dbUser.id));
 
-    return res.json(result.map(s => ({
-      ...s,
-      key: s.musicalKey,
-    })));
+    return res.json(
+      result.map((s) => ({
+        ...s,
+        key: s.musicalKey,
+      })),
+    );
   } catch (e) {
+    if (e instanceof ClerkServiceError) {
+      const { status, body } = clerkErrorToResponse(e);
+      return res.status(status).json(body);
+    }
     console.error(e);
     return res.status(500).json({ error: "Failed to get library" });
   }
@@ -104,13 +145,17 @@ router.get("/quota", async (req, res) => {
   try {
     const { userId } = getAuth(req);
     if (!userId) return res.status(401).json({ error: "Unauthorized" });
-    const dbUserId = await getDbUserId(userId);
-    const quota = await getStorageQuota(dbUserId);
+    const dbUser = await resolveDbUser(userId);
+    const quota = await getStorageQuota(dbUser.id);
     return res.json({
       storageUsedBytes: quota.storageUsedBytes,
       storageQuotaBytes: quota.storageQuotaBytes,
     });
   } catch (e) {
+    if (e instanceof ClerkServiceError) {
+      const { status, body } = clerkErrorToResponse(e);
+      return res.status(status).json(body);
+    }
     console.error(e);
     return res.status(500).json({ error: "Failed to get storage quota" });
   }
@@ -124,7 +169,11 @@ router.delete("/:id", async (req, res) => {
     const songId = parseInt(req.params.id);
     if (isNaN(songId)) return res.status(400).json({ error: "Invalid song ID" });
 
-    const dbUserId = await getDbUserId(userId);
+    // DELETE must NOT auto-create user. Only allow if user row already exists.
+    const dbUser = await findDbUser(userId);
+    if (!dbUser) {
+      return res.status(401).json({ error: "User account not found" });
+    }
 
     // 1. Find song with stems info, verify ownership
     const [song] = await db
@@ -134,7 +183,7 @@ router.delete("/:id", async (req, res) => {
         fileSize: songs.fileSize,
       })
       .from(songs)
-      .where(and(eq(songs.id, songId), eq(songs.userId, dbUserId)));
+      .where(and(eq(songs.id, songId), eq(songs.userId, dbUser.id)));
 
     if (!song) return res.status(404).json({ error: "Song not found" });
 
@@ -178,7 +227,7 @@ router.delete("/:id", async (req, res) => {
     await db.delete(songs).where(eq(songs.id, song.id));
 
     // 5. Decrement storage counter (guards against negative)
-    await decrementStorageUsed(dbUserId, song.fileSize ?? 0);
+    await decrementStorageUsed(dbUser.id, song.fileSize ?? 0);
 
     return res.json({ deleted: true });
   } catch (e) {
