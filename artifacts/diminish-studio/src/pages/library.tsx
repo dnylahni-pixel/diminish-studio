@@ -1,16 +1,44 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { Search, Filter, Play, Clock, Music } from "lucide-react";
-import { useGetUserLibrary } from "@workspace/api-client-react";
+import { Search, Filter, Play, Clock, Music, Trash2 } from "lucide-react";
+import { useGetUserLibrary, useRemoveFromLibrary, getGetUserLibraryQueryKey } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { StorageQuotaBar } from "@/components/library/StorageQuotaBar";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "@/hooks/use-toast";
 
 export function LibraryPage() {
   const [search, setSearch] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; title: string } | null>(null);
   const { data, isLoading, error } = useGetUserLibrary();
+  const queryClient = useQueryClient();
+
+  const removeMutation = useRemoveFromLibrary({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetUserLibraryQueryKey() });
+        toast({ description: "Song removed from library." });
+        setDeleteTarget(null);
+      },
+      onError: () => {
+        toast({ description: "Failed to remove song.", variant: "destructive" });
+        setDeleteTarget(null);
+      },
+    },
+  });
 
   const songs = Array.isArray(data)
     ? data
@@ -37,9 +65,9 @@ export function LibraryPage() {
 
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight mb-2">Music Hub</h1>
+          <h1 className="text-3xl font-bold tracking-tight mb-2">Library</h1>
           <p className="text-muted-foreground">
-            Explore and analyze songs in the catalog.
+            Your song collection and uploaded tracks.
           </p>
         </div>
 
@@ -74,71 +102,119 @@ export function LibraryPage() {
           Failed to load songs.
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredSongs.map((song: any) => (
-            <Link key={song.id} href={`/songs/${song.id}`}>
-              <div className="group cursor-pointer">
-                <div className="relative aspect-square rounded-xl overflow-hidden bg-muted mb-3 border border-border group-hover:border-primary/50 transition-colors">
-                  {song.coverUrl ? (
-                    <img
-                      src={song.coverUrl}
-                      alt={song.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-card">
-                      <Music className="w-12 h-12 text-muted-foreground/30" />
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredSongs.map((song: any) => (
+              <div key={song.id} className="group relative">
+                <Link href={`/songs/${song.id}`}>
+                  <div className="cursor-pointer">
+                    <div className="relative aspect-square rounded-xl overflow-hidden bg-muted mb-3 border border-border group-hover:border-primary/50 transition-colors">
+                      {song.coverUrl ? (
+                        <img
+                          src={song.coverUrl}
+                          alt={song.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-card">
+                          <Music className="w-12 h-12 text-muted-foreground/30" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center transform translate-y-4 group-hover:translate-y-0 transition-all duration-300">
+                          <Play className="w-5 h-5 ml-1" />
+                        </div>
+                      </div>
+                      <div className="absolute top-3 left-3 flex gap-2">
+                        <Badge
+                          variant="secondary"
+                          className="bg-background/80 backdrop-blur text-xs font-mono"
+                        >
+                          {song.bpm} BPM
+                        </Badge>
+                      </div>
                     </div>
-                  )}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center transform translate-y-4 group-hover:translate-y-0 transition-all duration-300">
-                      <Play className="w-5 h-5 ml-1" />
+                    <h3 className="font-bold text-lg truncate pr-8">{song.title}</h3>
+                    <p className="text-muted-foreground text-sm truncate">
+                      {song.artist}
+                    </p>
+                    <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {Math.floor(song.duration / 60)}:
+                        {(song.duration % 60).toString().padStart(2, "0")}
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-secondary">
+                        {song.key}
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded ${
+                          song.difficulty === "beginner"
+                            ? "bg-green-500/20 text-green-400"
+                            : song.difficulty === "intermediate"
+                              ? "bg-yellow-500/20 text-yellow-400"
+                              : "bg-red-500/20 text-red-400"
+                        }`}
+                      >
+                        {song.difficulty}
+                      </span>
                     </div>
                   </div>
-                  <div className="absolute top-3 left-3 flex gap-2">
-                    <Badge
-                      variant="secondary"
-                      className="bg-background/80 backdrop-blur text-xs font-mono"
-                    >
-                      {song.bpm} BPM
-                    </Badge>
-                  </div>
-                </div>
-                <h3 className="font-bold text-lg truncate">{song.title}</h3>
-                <p className="text-muted-foreground text-sm truncate">
-                  {song.artist}
-                </p>
-                <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    {Math.floor(song.duration / 60)}:
-                    {(song.duration % 60).toString().padStart(2, "0")}
-                  </span>
-                  <span className="px-2 py-0.5 rounded bg-secondary">
-                    {song.key}
-                  </span>
-                  <span
-                    className={`px-2 py-0.5 rounded ${
-                      song.difficulty === "beginner"
-                        ? "bg-green-500/20 text-green-400"
-                        : song.difficulty === "intermediate"
-                          ? "bg-yellow-500/20 text-yellow-400"
-                          : "bg-red-500/20 text-red-400"
-                    }`}
-                  >
-                    {song.difficulty}
-                  </span>
-                </div>
-              </div>
-            </Link>
-          ))}
+                </Link>
 
-          {filteredSongs.length === 0 && (
-            <div className="col-span-full py-20 text-center text-muted-foreground">
-              No songs found. Try a different search.
-            </div>
-          )}
-        </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-0 right-0 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setDeleteTarget({ id: song.id, title: song.title });
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+
+            {filteredSongs.length === 0 && (
+              <div className="col-span-full py-20 text-center text-muted-foreground">
+                No songs found. Try a different search.
+              </div>
+            )}
+          </div>
+
+          <AlertDialog
+            open={deleteTarget !== null}
+            onOpenChange={(open) => {
+              if (!open) setDeleteTarget(null);
+            }}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Remove from library?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete &ldquo;{deleteTarget?.title}&rdquo; and its
+                  stems from your library and free up storage space.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={removeMutation.isPending}>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  disabled={removeMutation.isPending}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={() => {
+                    if (deleteTarget) {
+                      removeMutation.mutate({ songId: deleteTarget.id });
+                    }
+                  }}
+                >
+                  {removeMutation.isPending ? "Removing..." : "Remove"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
       )}
     </div>
   );
