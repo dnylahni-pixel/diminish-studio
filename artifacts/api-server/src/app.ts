@@ -35,9 +35,10 @@ app.use(clerkMiddleware());
 
 app.use("/api", router);
 
-// Auto-run migrations on startup (idempotent via IF NOT EXISTS)
-runMigrations()
-  .then(() => logger.info("Migrations applied successfully"))
-  .catch((err: unknown) => logger.error({ err }, "Migration failed"));
+if (process.env.RUN_MIGRATIONS === "true") {
+  runMigrations()
+    .then(() => logger.info("Migrations applied successfully"))
+    .catch((err: unknown) => logger.error({ err }, "Migration failed"));
+}
 
 export default app;
