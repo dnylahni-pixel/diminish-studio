@@ -22,6 +22,7 @@ import {
 } from "./uploads.repository";
 import { getOrCreateUser } from "../../lib/user-utils";
 import type { PresignBody, ConfirmBody } from "./uploads.schema";
+import { backendConfig } from "../../config";
 
 // ─── Rate Limiter ──────────────────────────────────────────
 
@@ -198,7 +199,7 @@ export async function handleConfirm(body: ConfirmBody, userId: string) {
   await copyObject(quarantineKey, finalKey, expectedMime);
 
   // 7. Build permanent URL
-  const baseUrl = `${process.env["B2_ENDPOINT"]}/${BUCKET_NAME}`;
+  const baseUrl = `${backendConfig.b2.endpoint}/${BUCKET_NAME}`;
   const fileUrl = `${baseUrl}/${finalKey}`;
 
   // 8. Finalize song record (fileSize already saved in step 5)

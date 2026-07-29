@@ -5,6 +5,7 @@ import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { runMigrations } from "@workspace/db/migrate";
+import { backendConfig } from "./config";
 
 const app: Express = express();
 
@@ -35,7 +36,7 @@ app.use(clerkMiddleware());
 
 app.use("/api", router);
 
-if (process.env.RUN_MIGRATIONS === "true") {
+if (backendConfig.runMigrations) {
   runMigrations()
     .then(() => logger.info("Migrations applied successfully"))
     .catch((err: unknown) => logger.error({ err }, "Migration failed"));

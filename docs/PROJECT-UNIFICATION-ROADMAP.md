@@ -388,6 +388,7 @@ GitHub push
 
 ```text
 VITE_CLERK_PUBLISHABLE_KEY
+VITE_APP_ENVIRONMENT=production
 VITE_API_BASE_URL=https://<render-api-domain>
 BASE_PATH=/
 WEB_PORT=5173
@@ -451,6 +452,7 @@ artifacts/diminish-studio/vercel.json
 
 ```text
 NODE_ENV=production
+APP_ENVIRONMENT=production
 LOG_LEVEL=info
 RUN_MIGRATIONS=false
 DATABASE_ENVIRONMENT=production
@@ -546,7 +548,7 @@ Render نباید هنگام start migration اجرا کند.
 - [x] inventory runtime/OpenAPI
 - [x] خاموش‌کردن migration خودکار
 - [x] ثبت Roadmap
-- [ ] ثبت commit baseline یکدست‌سازی
+- [x] ثبت commit baseline یکدست‌سازی
 
 معیار خروج:
 
@@ -578,15 +580,15 @@ Render نباید هنگام start migration اجرا کند.
 
 ### Phase 2 — Config Module و Environment Contract
 
-وضعیت: شروع نشده
+وضعیت: تکمیل شده
 
-- [ ] Module مرکزی config با Zod
-- [ ] envهای Frontend و Backend جدا و typed
-- [ ] حذف validation پراکنده B2/RunPod/Clerk
-- [ ] حذف fallback production از client
-- [ ] افزودن `packageManager` و Node engine
-- [ ] `.node-version` یا `.nvmrc`
-- [ ] script برای چاپ وضعیت sanitized محیط
+- [x] Module مرکزی config با Zod
+- [x] envهای Frontend و Backend جدا و typed
+- [x] حذف validation پراکنده B2/RunPod/Clerk
+- [x] حذف fallback production از client
+- [x] افزودن `packageManager` و Node engine
+- [x] `.node-version` یا `.nvmrc`
+- [x] script برای چاپ وضعیت sanitized محیط
 
 معیار خروج:
 

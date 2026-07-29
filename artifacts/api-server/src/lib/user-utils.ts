@@ -4,9 +4,10 @@ import { usersTable } from "@workspace/db";
 import type { User } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { classifyClerkError, ClerkServiceError } from "./errors";
+import { backendConfig } from "../config";
 
 const clerkClient = createClerkClient({
-  secretKey: process.env.CLERK_SECRET_KEY!,
+  secretKey: backendConfig.clerk.secretKey,
 });
 
 /**

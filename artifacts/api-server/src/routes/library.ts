@@ -21,20 +21,21 @@ import {
 } from "./uploads/uploads.repository";
 import { getOrCreateUser } from "../lib/user-utils";
 import { ClerkServiceError, ClerkErrorKind } from "../lib/errors";
+import { backendConfig } from "../config";
 
 const s3Client = new S3Client({
-  endpoint: process.env["B2_ENDPOINT"],
-  region: process.env["B2_REGION"],
+  endpoint: backendConfig.b2.endpoint,
+  region: backendConfig.b2.region,
   credentials: {
-    accessKeyId: process.env["B2_KEY_ID"]!,
-    secretAccessKey: process.env["B2_APPLICATION_KEY"]!,
+    accessKeyId: backendConfig.b2.keyId,
+    secretAccessKey: backendConfig.b2.applicationKey,
   },
   forcePathStyle: true,
   requestChecksumCalculation: "WHEN_REQUIRED",
   responseChecksumValidation: "WHEN_REQUIRED",
 });
 
-const BUCKET_NAME = process.env["BUCKET_NAME"]!;
+const BUCKET_NAME = backendConfig.b2.bucketName;
 
 /** Extract the S3 object key from a full B2 URL */
 function extractKeyFromUrl(url: string): string | null {

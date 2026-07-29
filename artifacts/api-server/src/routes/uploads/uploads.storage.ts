@@ -8,40 +8,18 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { logger } from "../../lib/logger";
+import { backendConfig } from "../../config";
 import { PRESIGN_EXPIRY_SECONDS, MAGIC_BYTES_MAP } from "./uploads.constants";
-
-// ─── Validation at startup ─────────────────────────────────
-
-function requireEnv(key: string): string {
-  const value = process.env[key];
-  if (!value) {
-    throw new Error(
-      `Missing required environment variable: ${key}. Server cannot start.`,
-    );
-  }
-  return value;
-}
-
-function validateEnv() {
-  requireEnv("B2_ENDPOINT");
-  requireEnv("B2_REGION");
-  requireEnv("B2_KEY_ID");
-  requireEnv("B2_APPLICATION_KEY");
-  requireEnv("BUCKET_NAME");
-  logger.info("All required S3 env vars are present");
-}
-
-validateEnv();
 
 // ─── S3 Client ────────────────────────────────────────────
 
 function createS3Client(): S3Client {
   return new S3Client({
-    endpoint: process.env["B2_ENDPOINT"],
-    region: process.env["B2_REGION"],
+    endpoint: backendConfig.b2.endpoint,
+    region: backendConfig.b2.region,
     credentials: {
-      accessKeyId: process.env["B2_KEY_ID"]!,
-      secretAccessKey: process.env["B2_APPLICATION_KEY"]!,
+      accessKeyId: backendConfig.b2.keyId,
+      secretAccessKey: backendConfig.b2.applicationKey,
     },
     forcePathStyle: true,
   });
@@ -49,7 +27,7 @@ function createS3Client(): S3Client {
 
 export const s3Client = createS3Client();
 
-export const BUCKET_NAME = process.env["BUCKET_NAME"]!;
+export const BUCKET_NAME = backendConfig.b2.bucketName;
 export const QUARANTINE_PREFIX = "quarantine";
 
 // ─── Presigned URL ─────────────────────────────────────────

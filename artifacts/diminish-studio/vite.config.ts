@@ -4,10 +4,12 @@ import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 import { VitePWA } from "vite-plugin-pwa";
+import { parseFrontendEnvironment } from "./src/config-schema";
 
 export default defineConfig(async ({ mode }) => {
   const envDir = path.resolve(import.meta.dirname, "../..");
   const env = loadEnv(mode, envDir, "");
+  parseFrontendEnvironment(env);
   const rawPort = env.WEB_PORT || env.PORT || "5173";
   const port = Number(rawPort);
 

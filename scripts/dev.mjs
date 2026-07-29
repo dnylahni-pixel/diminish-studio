@@ -23,17 +23,6 @@ let stopping = false;
 let requestedExitCode = 0;
 let forceStopTimer;
 
-function requireVariables(keys, processName) {
-  const missing = keys.filter((key) => !process.env[key]);
-
-  if (missing.length > 0) {
-    console.error(
-      `${processName} cannot start. Missing in .env.local: ${missing.join(", ")}`,
-    );
-    process.exit(1);
-  }
-}
-
 function executable(relativePath) {
   const extension = process.platform === "win32" ? ".cmd" : "";
   return resolve(workspaceRoot, `${relativePath}${extension}`);
@@ -138,28 +127,6 @@ function finishStop() {
 }
 
 if (runApi) {
-  requireVariables(
-    [
-      "DATABASE_ENVIRONMENT",
-      "DATABASE_URL",
-      "CLERK_PUBLISHABLE_KEY",
-      "CLERK_SECRET_KEY",
-      "B2_ENDPOINT",
-      "B2_REGION",
-      "B2_KEY_ID",
-      "B2_APPLICATION_KEY",
-      "BUCKET_NAME",
-    ],
-    "API",
-  );
-
-  if (process.env.DATABASE_ENVIRONMENT !== "development") {
-    console.error(
-      "API refused to start: DATABASE_ENVIRONMENT must be development. Use a separate Neon development branch/database.",
-    );
-    process.exit(1);
-  }
-
   start(
     "api",
     executable("scripts/node_modules/.bin/tsx"),
@@ -170,8 +137,6 @@ if (runApi) {
 }
 
 if (runWeb) {
-  requireVariables(["VITE_CLERK_PUBLISHABLE_KEY"], "Web");
-
   start(
     "web",
     executable("artifacts/diminish-studio/node_modules/.bin/vite"),

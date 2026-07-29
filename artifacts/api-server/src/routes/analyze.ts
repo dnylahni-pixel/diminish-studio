@@ -4,25 +4,23 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { db } from "@workspace/db";
 import { songs, songAnalyses } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { backendConfig } from "../config";
 
 const router = Router();
 
-const RUNPOD_ENDPOINT = process.env.RUNPOD_ENDPOINT || "";
-const RUNPOD_API_KEY = process.env.RUNPOD_API_KEY || "";
-
 const s3Client = new S3Client({
-  endpoint: process.env["B2_ENDPOINT"],
-  region: process.env["B2_REGION"],
+  endpoint: backendConfig.b2.endpoint,
+  region: backendConfig.b2.region,
   credentials: {
-    accessKeyId: process.env["B2_KEY_ID"]!,
-    secretAccessKey: process.env["B2_APPLICATION_KEY"]!,
+    accessKeyId: backendConfig.b2.keyId,
+    secretAccessKey: backendConfig.b2.applicationKey,
   },
   forcePathStyle: true,
   requestChecksumCalculation: "WHEN_REQUIRED",
   responseChecksumValidation: "WHEN_REQUIRED",
 });
 
-const BUCKET_NAME = process.env["BUCKET_NAME"]!;
+const BUCKET_NAME = backendConfig.b2.bucketName;
 
 interface RunPodBeat {
   time: number;
@@ -84,7 +82,7 @@ router.post("/:id/analyze", async (req, res) => {
       });
 
     // 3. Call RunPod
-    if (!RUNPOD_ENDPOINT || !RUNPOD_API_KEY) {
+    if (!backendConfig.runPod) {
       // Rollback status
       await db
         .update(songAnalyses)
@@ -99,11 +97,11 @@ router.post("/:id/analyze", async (req, res) => {
 
     let runpodResp: Response;
     try {
-      runpodResp = await fetch(RUNPOD_ENDPOINT, {
+      runpodResp = await fetch(backendConfig.runPod.endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${RUNPOD_API_KEY}`,
+          Authorization: `Bearer ${backendConfig.runPod.apiKey}`,
         },
         body: JSON.stringify({
           input: { audio_url: audioUrl },

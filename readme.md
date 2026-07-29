@@ -8,6 +8,8 @@
 pnpm dev
 ```
 
+نسخه هدف runtime در `.node-version` برابر Node.js 22 است.
+
 سپس:
 
 - Frontend: `http://localhost:5173`
@@ -16,6 +18,12 @@ pnpm dev
 - Dependency readiness: `http://localhost:3000/api/readyz`
 
 تغییرات Frontend با HMR فوراً در مرورگر دیده می‌شوند و تغییرات Backend باعث restart خودکار می‌شوند.
+
+برای مشاهده وضعیت sanitized محیط بدون نمایش secret:
+
+```bash
+pnpm env:status
+```
 
 ## اتصال‌های محیط لوکال
 

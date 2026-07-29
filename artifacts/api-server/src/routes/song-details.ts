@@ -4,20 +4,21 @@ import { songs, artists, songAnalyses, songStems } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { backendConfig } from "../config";
 
 const s3Client = new S3Client({
-  endpoint: process.env["B2_ENDPOINT"],
-  region: process.env["B2_REGION"],
+  endpoint: backendConfig.b2.endpoint,
+  region: backendConfig.b2.region,
   credentials: {
-    accessKeyId: process.env["B2_KEY_ID"]!,
-    secretAccessKey: process.env["B2_APPLICATION_KEY"]!,
+    accessKeyId: backendConfig.b2.keyId,
+    secretAccessKey: backendConfig.b2.applicationKey,
   },
   forcePathStyle: true,
   requestChecksumCalculation: "WHEN_REQUIRED",
   responseChecksumValidation: "WHEN_REQUIRED",
 });
 
-const BUCKET_NAME = process.env["BUCKET_NAME"]!;
+const BUCKET_NAME = backendConfig.b2.bucketName;
 
 const router = Router();
 
