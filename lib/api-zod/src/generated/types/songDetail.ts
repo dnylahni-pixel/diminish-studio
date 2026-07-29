@@ -6,21 +6,45 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AudioTrack } from './audioTrack';
+import type { BeatPoint } from './beatPoint';
 import type { ChordMeasure } from './chordMeasure';
 import type { LyricLine } from './lyricLine';
+import type { SongDetailKeyTimelineItem } from './songDetailKeyTimelineItem';
+import type { SongDetailSectionsItem } from './songDetailSectionsItem';
+import type { SongDetailTempoTimelineItem } from './songDetailTempoTimelineItem';
+import type { TimeSignature } from './timeSignature';
 
 export interface SongDetail {
   id: number;
   title: string;
   artist: string;
-  genre: string;
+  /** @nullable */
+  artistId: number | null;
   duration: number;
   /** @nullable */
   coverUrl: string | null;
   bpm: number;
   key: string;
+  /** @nullable */
+  mode: string | null;
   difficulty: string;
+  timeSignature: TimeSignature;
+  /** @nullable */
+  version: string | null;
+  analysisStatus: string;
+  /** @nullable */
+  generatedAt: Date | null;
+  beatGrid: BeatPoint[];
   lyrics: LyricLine[];
   chordTimeline: ChordMeasure[];
+  sections: SongDetailSectionsItem[];
+  tempoTimeline: SongDetailTempoTimelineItem[];
+  keyTimeline: SongDetailKeyTimelineItem[];
   tracks: AudioTrack[];
+  /** @nullable */
+  masterTrackUrl: string | null;
+  playCount: number;
+  featured: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }

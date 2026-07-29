@@ -1,7 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "wouter";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { customFetch } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  getGetSongDetailsQueryKey,
+  useAnalyzeSong,
+  useGetSongDetails,
+} from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { audioEngine } from "@/lib/AudioEngine";
 import { useAnimationFrame } from "@/hooks/useAnimationFrame";
@@ -61,11 +65,8 @@ function useDragChange(
 
 export function PlayerPage() {
   const { id } = useParams();
-  const { data: song, isLoading } = useQuery({
-    queryKey: ['song-details', Number(id)],
-    queryFn: () => customFetch<any>(`/api/song-details/${id}`, { responseType: "json" }),
-    enabled: !!id,
-  });
+  const songId = Number(id);
+  const { data: song, isLoading } = useGetSongDetails(songId);
 
   const [playing,     setPlaying]     = useState(false);
   const timeRef = useRef(0);
@@ -76,13 +77,21 @@ export function PlayerPage() {
   const [volumes,     setVolumes]     = useState<Record<number, number>>({});
   const [muted,       setMuted]       = useState<Record<number, boolean>>({});
   const [uiVisible,   setUiVisible]   = useState(true);
-  const [analyzing,   setAnalyzing]   = useState(false);
   const [loadProgress, setLoadProgress] = useState<{ loaded: number; total: number }>({ loaded: 0, total: 0 });
   const [tracksReady,  setTracksReady]  = useState(false);
 
   const [chordLevel,  setChordLevel]  = useState<ChordLevel>("pro");
 
   const queryClient = useQueryClient();
+  const analyzeMutation = useAnalyzeSong({
+    mutation: {
+      onSuccess: () =>
+        queryClient.invalidateQueries({
+          queryKey: getGetSongDetailsQueryKey(songId),
+        }),
+    },
+  });
+  const analyzing = analyzeMutation.isPending;
   const timelineRef = useRef<HTMLDivElement>(null);
   const lyricsRef   = useRef<HTMLDivElement>(null);
   const idleTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -236,19 +245,12 @@ useEffect(() => {
 
   // ── analyze handler ──────────────────────────────────────────────────────
   const handleAnalyze = useCallback(async () => {
-    setAnalyzing(true);
     try {
-      await customFetch(`/api/songs/${id}/analyze`, {
-        method: "POST",
-        responseType: "json",
-      });
-      queryClient.invalidateQueries({ queryKey: ['song-details', Number(id)] });
+      await analyzeMutation.mutateAsync({ id: songId });
     } catch (e: any) {
       console.error("Analyze failed:", e);
-    } finally {
-      setAnalyzing(false);
     }
-  }, [id, queryClient]);
+  }, [analyzeMutation, songId]);
 
   // ── transport handlers (wired to AudioEngine) ────────────────────────────
   const handlePlayPause = useCallback(() => {

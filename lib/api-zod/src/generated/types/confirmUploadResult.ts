@@ -5,12 +5,9 @@
  * DiminishStudio API - Music learning and chord analysis platform
  * OpenAPI spec version: 0.1.0
  */
+import type { ConfirmUploadResultStatus } from './confirmUploadResultStatus';
 
-export interface ProcessSongInput {
-  /** URL or "upload" */
-  source: string;
-  /** @nullable */
-  title?: string | null;
-  /** @nullable */
-  artist?: string | null;
+export interface ConfirmUploadResult {
+  songId: number;
+  status: ConfirmUploadResultStatus;
 }

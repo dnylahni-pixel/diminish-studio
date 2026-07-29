@@ -5,22 +5,17 @@
  * DiminishStudio API - Music learning and chord analysis platform
  * OpenAPI spec version: 0.1.0
  */
-import type { SongDifficulty } from './songDifficulty';
 
-export interface Song {
+export interface LibrarySong {
   id: number;
   title: string;
   /** @nullable */
   artist: string | null;
   /** @nullable */
   artistId: number | null;
-  /**
-     * Duration in seconds
-     * @nullable
-     */
-  duration: number | null;
+  difficulty: string;
   /** @nullable */
-  coverUrl: string | null;
+  duration: number | null;
   /** @nullable */
   bpm: number | null;
   /** @nullable */
@@ -31,10 +26,17 @@ export interface Song {
   mode: string | null;
   /** @nullable */
   timeSignature: string | null;
-  difficulty: SongDifficulty;
+  /** @nullable */
+  coverUrl: string | null;
   playCount: number;
   featured: boolean;
-  status?: string;
+  status: string;
+  /** @nullable */
+  fileKey: string | null;
+  /** @nullable */
+  fileUrl: string | null;
+  /** @nullable */
+  mimeType: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

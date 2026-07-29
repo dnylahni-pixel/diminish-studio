@@ -6,8 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface LyricLine {
+export interface BeatPoint {
   time: number;
-  text: string;
-  chords: string[];
+  beat: number;
+  measure: number;
+  isDownbeat: boolean;
 }

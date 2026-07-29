@@ -10,10 +10,11 @@ export type AudioTrackInstrument = typeof AudioTrackInstrument[keyof typeof Audi
 
 
 export const AudioTrackInstrument = {
+  master: 'master',
   guitar: 'guitar',
   piano: 'piano',
   bass: 'bass',
   drums: 'drums',
   vocal: 'vocal',
-  synth: 'synth',
+  other: 'other',
 } as const;

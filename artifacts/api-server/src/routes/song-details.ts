@@ -178,15 +178,15 @@ router.get("/:id", async (req, res) => {
       // Basic metadata
       id: songData.id,
       title: songData.title,
-      artist: songData.artist,
+      artist: songData.artist ?? "Unknown Artist",
       artistId: songData.artistId,
       coverUrl: songData.coverUrl,
       difficulty: songData.difficulty,
       
       // Musical properties
-      duration: songData.duration,
-      bpm: songData.bpm,
-      key: songData.musicalKey,
+      duration: songData.duration ?? 0,
+      bpm: songData.bpm ?? 0,
+      key: songData.musicalKey ?? "",
       mode: songData.mode,
       timeSignature,
 

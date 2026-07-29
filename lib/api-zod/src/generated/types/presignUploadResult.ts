@@ -6,8 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface LyricLine {
-  time: number;
-  text: string;
-  chords: string[];
+export interface PresignUploadResult {
+  uploadUrl: string;
+  uploadToken: string;
+  expiresAt: Date;
 }

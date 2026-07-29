@@ -5,8 +5,39 @@
  * DiminishStudio API - Music learning and chord analysis platform
  * OpenAPI spec version: 0.1.0
  */
+export interface ApiError {
+  error: string;
+  code: string;
+  details?: unknown;
+}
+
 export interface HealthStatus {
   status: string;
+}
+
+export type ReadinessStatusStatus = typeof ReadinessStatusStatus[keyof typeof ReadinessStatusStatus];
+
+
+export const ReadinessStatusStatus = {
+  ok: 'ok',
+  error: 'error',
+} as const;
+
+export type ReadinessStatusDependenciesDatabase = typeof ReadinessStatusDependenciesDatabase[keyof typeof ReadinessStatusDependenciesDatabase];
+
+
+export const ReadinessStatusDependenciesDatabase = {
+  ok: 'ok',
+  error: 'error',
+} as const;
+
+export type ReadinessStatusDependencies = {
+  database: ReadinessStatusDependenciesDatabase;
+};
+
+export interface ReadinessStatus {
+  status: ReadinessStatusStatus;
+  dependencies: ReadinessStatusDependencies;
 }
 
 export type SongDifficulty = typeof SongDifficulty[keyof typeof SongDifficulty];
@@ -21,20 +52,54 @@ export const SongDifficulty = {
 export interface Song {
   id: number;
   title: string;
-  artist: string;
-  genre: string;
-  /** Duration in seconds */
-  duration: number;
+  /** @nullable */
+  artist: string | null;
+  /** @nullable */
+  artistId: number | null;
+  /**
+     * Duration in seconds
+     * @nullable
+     */
+  duration: number | null;
   /** @nullable */
   coverUrl: string | null;
-  bpm: number;
-  key: string;
+  /** @nullable */
+  bpm: number | null;
+  /** @nullable */
+  key: string | null;
+  /** @nullable */
+  musicalKey?: string | null;
+  /** @nullable */
+  mode: string | null;
+  /** @nullable */
+  timeSignature: string | null;
   difficulty: SongDifficulty;
-  playCount?: number;
+  playCount: number;
+  featured: boolean;
+  status?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type SongDetailSectionsItem = { [key: string]: unknown };
+
+export type SongDetailTempoTimelineItem = { [key: string]: unknown };
+
+export type SongDetailKeyTimelineItem = { [key: string]: unknown };
+
+export interface TimeSignature {
+  numerator: number;
+  denominator: number;
+}
+
+export interface BeatPoint {
+  time: number;
+  beat: number;
+  measure: number;
+  isDownbeat: boolean;
 }
 
 export interface LyricLine {
-  /** Time in seconds */
   time: number;
   text: string;
   chords: string[];
@@ -51,12 +116,13 @@ export type AudioTrackInstrument = typeof AudioTrackInstrument[keyof typeof Audi
 
 
 export const AudioTrackInstrument = {
+  master: 'master',
   guitar: 'guitar',
   piano: 'piano',
   bass: 'bass',
   drums: 'drums',
   vocal: 'vocal',
-  synth: 'synth',
+  other: 'other',
 } as const;
 
 export interface AudioTrack {
@@ -66,56 +132,62 @@ export interface AudioTrack {
   /** 0-100 */
   volume: number;
   muted: boolean;
+  soloable: boolean;
+  pan: number;
+  streamUrl: string;
+  offset: number;
+  normalizationGain: number;
+  /** @nullable */
+  peaks: number[] | null;
 }
 
 export interface SongDetail {
   id: number;
   title: string;
   artist: string;
-  genre: string;
+  /** @nullable */
+  artistId: number | null;
   duration: number;
   /** @nullable */
   coverUrl: string | null;
   bpm: number;
   key: string;
+  /** @nullable */
+  mode: string | null;
   difficulty: string;
+  timeSignature: TimeSignature;
+  /** @nullable */
+  version: string | null;
+  analysisStatus: string;
+  /** @nullable */
+  generatedAt: string | null;
+  beatGrid: BeatPoint[];
   lyrics: LyricLine[];
   chordTimeline: ChordMeasure[];
+  sections: SongDetailSectionsItem[];
+  tempoTimeline: SongDetailTempoTimelineItem[];
+  keyTimeline: SongDetailKeyTimelineItem[];
   tracks: AudioTrack[];
+  /** @nullable */
+  masterTrackUrl: string | null;
+  playCount: number;
+  featured: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface ProcessSongInput {
-  /** URL or "upload" */
-  source: string;
-  /** @nullable */
-  title?: string | null;
-  /** @nullable */
-  artist?: string | null;
-}
-
-export type ProcessingJobStatus = typeof ProcessingJobStatus[keyof typeof ProcessingJobStatus];
+export type AnalyzeResultStatus = typeof AnalyzeResultStatus[keyof typeof AnalyzeResultStatus];
 
 
-export const ProcessingJobStatus = {
-  queued: 'queued',
-  analyzing: 'analyzing',
-  extracting_chords: 'extracting_chords',
-  syncing_lyrics: 'syncing_lyrics',
-  finalizing: 'finalizing',
-  done: 'done',
-  error: 'error',
+export const AnalyzeResultStatus = {
+  completed: 'completed',
 } as const;
 
-export interface ProcessingJob {
-  jobId: string;
-  status: ProcessingJobStatus;
-  /** 0-100 */
-  progress: number;
-  /** @nullable */
-  songId?: number | null;
-  /** @nullable */
-  errorMessage?: string | null;
-  createdAt: string;
+export interface AnalyzeResult {
+  songId: number;
+  status: AnalyzeResultStatus;
+  beatCount: number;
+  chordCount: number;
 }
 
 export interface Chord {
@@ -150,22 +222,39 @@ export interface UserUpdate {
   preferredInstrument?: string;
 }
 
-export interface RegisterInput {
-  username: string;
-  email: string;
-  password: string;
-}
-
-export interface LoginInput {
-  email: string;
-  password: string;
-}
-
-export interface LibraryEntry {
+export interface LibrarySong {
   id: number;
-  songId: number;
-  addedAt: string;
-  song: Song;
+  title: string;
+  /** @nullable */
+  artist: string | null;
+  /** @nullable */
+  artistId: number | null;
+  difficulty: string;
+  /** @nullable */
+  duration: number | null;
+  /** @nullable */
+  bpm: number | null;
+  /** @nullable */
+  key: string | null;
+  /** @nullable */
+  musicalKey?: string | null;
+  /** @nullable */
+  mode: string | null;
+  /** @nullable */
+  timeSignature: string | null;
+  /** @nullable */
+  coverUrl: string | null;
+  playCount: number;
+  featured: boolean;
+  status: string;
+  /** @nullable */
+  fileKey: string | null;
+  /** @nullable */
+  fileUrl: string | null;
+  /** @nullable */
+  mimeType: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface StorageQuota {
@@ -175,8 +264,80 @@ export interface StorageQuota {
   storageQuotaBytes: number;
 }
 
-export interface LibraryInput {
+export interface DeleteSongResult {
+  deleted: boolean;
+}
+
+export type AudioMimeType = typeof AudioMimeType[keyof typeof AudioMimeType];
+
+
+export const AudioMimeType = {
+  'audio/mpeg': 'audio/mpeg',
+  'audio/wav': 'audio/wav',
+  'audio/flac': 'audio/flac',
+  'audio/mp4': 'audio/mp4',
+  'audio/ogg': 'audio/ogg',
+} as const;
+
+export interface PresignUploadInput {
+  /**
+     * @minLength 1
+     * @maxLength 255
+     */
+  fileName: string;
+  /**
+     * @minimum 1
+     * @maximum 104857600
+     */
+  fileSize: number;
+  mimeType: AudioMimeType;
+  /**
+     * @maximum 600
+     * @exclusiveMinimum 0
+     */
+  duration: number;
+}
+
+export interface PresignUploadResult {
+  uploadUrl: string;
+  uploadToken: string;
+  expiresAt: string;
+}
+
+export interface ConfirmUploadInput {
+  uploadToken: string;
+  /**
+     * @minimum 1
+     * @maximum 104857600
+     */
+  expectedSize: number;
+  expectedMime: AudioMimeType;
+  /**
+     * @minLength 1
+     * @maxLength 255
+     */
+  title?: string;
+  /**
+     * @maximum 600
+     * @exclusiveMinimum 0
+     */
+  duration: number;
+}
+
+export type ConfirmUploadResultStatus = typeof ConfirmUploadResultStatus[keyof typeof ConfirmUploadResultStatus];
+
+
+export const ConfirmUploadResultStatus = {
+  uploaded: 'uploaded',
+} as const;
+
+export interface ConfirmUploadResult {
   songId: number;
+  status: ConfirmUploadResultStatus;
+}
+
+export interface CancelUploadResult {
+  cancelled: boolean;
 }
 
 export interface LearningSession {
@@ -215,6 +376,56 @@ export interface MasteredChord {
   totalAttempts: number;
   successRate: number;
 }
+
+/**
+ * Invalid request
+ */
+export type BadRequestResponse = ApiError;
+
+/**
+ * Authentication required
+ */
+export type UnauthorizedResponse = ApiError;
+
+/**
+ * Resource not found
+ */
+export type NotFoundResponse = ApiError;
+
+/**
+ * Resource state conflict
+ */
+export type ConflictResponse = ApiError;
+
+/**
+ * Resource expired or no longer exists
+ */
+export type GoneResponse = ApiError;
+
+/**
+ * File or quota limit exceeded
+ */
+export type PayloadTooLargeResponse = ApiError;
+
+/**
+ * Rate limit exceeded
+ */
+export type TooManyRequestsResponse = ApiError;
+
+/**
+ * Provider request failed
+ */
+export type BadGatewayResponse = ApiError;
+
+/**
+ * Service unavailable
+ */
+export type ServiceUnavailableResponse = ApiError;
+
+/**
+ * Provider request timed out
+ */
+export type GatewayTimeoutResponse = ApiError;
 
 export type ListSongsParams = {
 genre?: string;

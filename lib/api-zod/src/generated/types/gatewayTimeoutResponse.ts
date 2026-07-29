@@ -5,8 +5,9 @@
  * DiminishStudio API - Music learning and chord analysis platform
  * OpenAPI spec version: 0.1.0
  */
+import type { ApiError } from './apiError';
 
-export interface LoginInput {
-  email: string;
-  password: string;
-}
+/**
+ * Provider request timed out
+ */
+export type GatewayTimeoutResponse = ApiError;

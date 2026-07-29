@@ -5,9 +5,9 @@
  * DiminishStudio API - Music learning and chord analysis platform
  * OpenAPI spec version: 0.1.0
  */
+import type { ApiError } from './apiError';
 
-export interface LyricLine {
-  time: number;
-  text: string;
-  chords: string[];
-}
+/**
+ * Resource not found
+ */
+export type NotFoundResponse = ApiError;

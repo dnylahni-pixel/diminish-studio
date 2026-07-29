@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { Search, Filter, Play, Clock, Music, Trash2 } from "lucide-react";
-import { useGetUserLibrary, useRemoveFromLibrary, getGetUserLibraryQueryKey } from "@workspace/api-client-react";
+import { useGetUserLibrary, useDeleteLibrarySong, getGetUserLibraryQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,7 @@ export function LibraryPage() {
   const { data, isLoading, error } = useGetUserLibrary();
   const queryClient = useQueryClient();
 
-  const removeMutation = useRemoveFromLibrary({
+  const removeMutation = useDeleteLibrarySong({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetUserLibraryQueryKey() });

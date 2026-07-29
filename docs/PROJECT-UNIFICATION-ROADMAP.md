@@ -616,17 +616,17 @@ Render نباید هنگام start migration اجرا کند.
 
 ### Phase 4 — OpenAPI به‌عنوان منبع حقیقت
 
-وضعیت: شروع نشده
+وضعیت: تکمیل شده
 
-- [ ] افزودن Analyze
-- [ ] افزودن Song Details
-- [ ] افزودن Upload presign/confirm/cancel
-- [ ] اصلاح Library
-- [ ] اصلاح auth/error schemas
-- [ ] regenerate React Query client
-- [ ] regenerate Zod contract
-- [ ] جایگزینی `customFetch` مستقیم در pageها
-- [ ] generated-diff check
+- [x] افزودن Analyze
+- [x] افزودن Song Details
+- [x] افزودن Upload presign/confirm/cancel
+- [x] اصلاح Library
+- [x] اصلاح auth/error schemas
+- [x] regenerate React Query client
+- [x] regenerate Zod contract
+- [x] جایگزینی `customFetch` مستقیم در pageها
+- [x] generated-diff check
 
 معیار خروج:
 

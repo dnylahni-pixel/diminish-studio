@@ -17,6 +17,17 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * @summary Check runtime dependencies
+ */
+export const ReadinessCheckResponse = zod.object({
+  "status": zod.enum(['ok', 'error']),
+  "dependencies": zod.object({
+  "database": zod.enum(['ok', 'error'])
+})
+})
+
+
+/**
  * @summary List all songs in the library
  */
 export const ListSongsQueryParams = zod.object({
@@ -27,20 +38,27 @@ export const ListSongsQueryParams = zod.object({
 export const ListSongsResponseItem = zod.object({
   "id": zod.number(),
   "title": zod.string(),
-  "artist": zod.string(),
-  "genre": zod.string(),
-  "duration": zod.number().describe('Duration in seconds'),
+  "artist": zod.string().nullable(),
+  "artistId": zod.number().nullable(),
+  "duration": zod.number().nullable().describe('Duration in seconds'),
   "coverUrl": zod.string().nullable(),
-  "bpm": zod.number(),
-  "key": zod.string(),
+  "bpm": zod.number().nullable(),
+  "key": zod.string().nullable(),
+  "musicalKey": zod.string().nullish(),
+  "mode": zod.string().nullable(),
+  "timeSignature": zod.string().nullable(),
   "difficulty": zod.enum(['beginner', 'intermediate', 'advanced']),
-  "playCount": zod.number().optional()
+  "playCount": zod.number(),
+  "featured": zod.boolean(),
+  "status": zod.string().optional(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
 })
 export const ListSongsResponse = zod.array(ListSongsResponseItem)
 
 
 /**
- * @summary Get a single song with full chord and lyric data
+ * @summary Get public song metadata or an owned private upload
  */
 export const GetSongParams = zod.object({
   "id": zod.coerce.number()
@@ -49,31 +67,21 @@ export const GetSongParams = zod.object({
 export const GetSongResponse = zod.object({
   "id": zod.number(),
   "title": zod.string(),
-  "artist": zod.string(),
-  "genre": zod.string(),
-  "duration": zod.number(),
+  "artist": zod.string().nullable(),
+  "artistId": zod.number().nullable(),
+  "duration": zod.number().nullable().describe('Duration in seconds'),
   "coverUrl": zod.string().nullable(),
-  "bpm": zod.number(),
-  "key": zod.string(),
-  "difficulty": zod.string(),
-  "lyrics": zod.array(zod.object({
-  "time": zod.number().describe('Time in seconds'),
-  "text": zod.string(),
-  "chords": zod.array(zod.string())
-})),
-  "chordTimeline": zod.array(zod.object({
-  "measure": zod.number(),
-  "beat": zod.number(),
-  "chord": zod.string(),
-  "time": zod.number()
-})),
-  "tracks": zod.array(zod.object({
-  "id": zod.number(),
-  "instrument": zod.enum(['guitar', 'piano', 'bass', 'drums', 'vocal', 'synth']),
-  "label": zod.string(),
-  "volume": zod.number().describe('0-100'),
-  "muted": zod.boolean()
-}))
+  "bpm": zod.number().nullable(),
+  "key": zod.string().nullable(),
+  "musicalKey": zod.string().nullish(),
+  "mode": zod.string().nullable(),
+  "timeSignature": zod.string().nullable(),
+  "difficulty": zod.enum(['beginner', 'intermediate', 'advanced']),
+  "playCount": zod.number(),
+  "featured": zod.boolean(),
+  "status": zod.string().optional(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
 })
 
 
@@ -83,42 +91,103 @@ export const GetSongResponse = zod.object({
 export const GetFeaturedSongsResponseItem = zod.object({
   "id": zod.number(),
   "title": zod.string(),
-  "artist": zod.string(),
-  "genre": zod.string(),
-  "duration": zod.number().describe('Duration in seconds'),
+  "artist": zod.string().nullable(),
+  "artistId": zod.number().nullable(),
+  "duration": zod.number().nullable().describe('Duration in seconds'),
   "coverUrl": zod.string().nullable(),
-  "bpm": zod.number(),
-  "key": zod.string(),
+  "bpm": zod.number().nullable(),
+  "key": zod.string().nullable(),
+  "musicalKey": zod.string().nullish(),
+  "mode": zod.string().nullable(),
+  "timeSignature": zod.string().nullable(),
   "difficulty": zod.enum(['beginner', 'intermediate', 'advanced']),
-  "playCount": zod.number().optional()
+  "playCount": zod.number(),
+  "featured": zod.boolean(),
+  "status": zod.string().optional(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
 })
 export const GetFeaturedSongsResponse = zod.array(GetFeaturedSongsResponseItem)
 
 
 /**
- * @summary Submit a song URL or upload for processing
+ * @summary Analyze an owned uploaded song
  */
-export const ProcessSongBody = zod.object({
-  "source": zod.string().describe('URL or \"upload\"'),
-  "title": zod.string().nullish(),
-  "artist": zod.string().nullish()
+export const AnalyzeSongParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AnalyzeSongResponse = zod.object({
+  "songId": zod.number(),
+  "status": zod.enum(['completed']),
+  "beatCount": zod.number(),
+  "chordCount": zod.number()
 })
 
 
 /**
- * @summary Get status of a processing job
+ * @summary Get Player aggregate with timelines and signed track URLs
  */
-export const GetProcessingJobParams = zod.object({
-  "jobId": zod.coerce.string()
+export const GetSongDetailsParams = zod.object({
+  "id": zod.coerce.number()
 })
 
-export const GetProcessingJobResponse = zod.object({
-  "jobId": zod.string(),
-  "status": zod.enum(['queued', 'analyzing', 'extracting_chords', 'syncing_lyrics', 'finalizing', 'done', 'error']),
-  "progress": zod.number().describe('0-100'),
-  "songId": zod.number().nullish(),
-  "errorMessage": zod.string().nullish(),
-  "createdAt": zod.string()
+export const GetSongDetailsResponse = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "artist": zod.string(),
+  "artistId": zod.number().nullable(),
+  "duration": zod.number(),
+  "coverUrl": zod.string().nullable(),
+  "bpm": zod.number(),
+  "key": zod.string(),
+  "mode": zod.string().nullable(),
+  "difficulty": zod.string(),
+  "timeSignature": zod.object({
+  "numerator": zod.number(),
+  "denominator": zod.number()
+}),
+  "version": zod.string().nullable(),
+  "analysisStatus": zod.string(),
+  "generatedAt": zod.coerce.date().nullable(),
+  "beatGrid": zod.array(zod.object({
+  "time": zod.number(),
+  "beat": zod.number(),
+  "measure": zod.number(),
+  "isDownbeat": zod.boolean()
+})),
+  "lyrics": zod.array(zod.object({
+  "time": zod.number(),
+  "text": zod.string(),
+  "chords": zod.array(zod.string())
+})),
+  "chordTimeline": zod.array(zod.object({
+  "measure": zod.number(),
+  "beat": zod.number(),
+  "chord": zod.string(),
+  "time": zod.number()
+})),
+  "sections": zod.array(zod.record(zod.string(), zod.unknown())),
+  "tempoTimeline": zod.array(zod.record(zod.string(), zod.unknown())),
+  "keyTimeline": zod.array(zod.record(zod.string(), zod.unknown())),
+  "tracks": zod.array(zod.object({
+  "id": zod.number(),
+  "instrument": zod.enum(['master', 'guitar', 'piano', 'bass', 'drums', 'vocal', 'other']),
+  "label": zod.string(),
+  "volume": zod.number().describe('0-100'),
+  "muted": zod.boolean(),
+  "soloable": zod.boolean(),
+  "pan": zod.number(),
+  "streamUrl": zod.string(),
+  "offset": zod.number(),
+  "normalizationGain": zod.number(),
+  "peaks": zod.array(zod.number()).nullable()
+})),
+  "masterTrackUrl": zod.string().nullable(),
+  "playCount": zod.number(),
+  "featured": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
 })
 
 
@@ -197,35 +266,6 @@ export const UpdateMeResponse = zod.object({
 
 
 /**
- * @summary Register a new user
- */
-export const RegisterUserBody = zod.object({
-  "username": zod.string(),
-  "email": zod.string(),
-  "password": zod.string()
-})
-
-
-/**
- * @summary Login user
- */
-export const LoginUserBody = zod.object({
-  "email": zod.string(),
-  "password": zod.string()
-})
-
-export const LoginUserResponse = zod.object({
-  "id": zod.number(),
-  "username": zod.string(),
-  "email": zod.string(),
-  "avatarUrl": zod.string().nullish(),
-  "bio": zod.string().nullish(),
-  "preferredInstrument": zod.string().nullish(),
-  "createdAt": zod.string()
-})
-
-
-/**
  * @summary Get user's storage quota and usage
  */
 export const GetStorageQuotaResponse = zod.object({
@@ -235,41 +275,107 @@ export const GetStorageQuotaResponse = zod.object({
 
 
 /**
- * @summary Get user's saved song library
+ * @summary Get user's owned uploaded songs
  */
 export const GetUserLibraryResponseItem = zod.object({
   "id": zod.number(),
-  "songId": zod.number(),
-  "addedAt": zod.string(),
-  "song": zod.object({
-  "id": zod.number(),
   "title": zod.string(),
-  "artist": zod.string(),
-  "genre": zod.string(),
-  "duration": zod.number().describe('Duration in seconds'),
+  "artist": zod.string().nullable(),
+  "artistId": zod.number().nullable(),
+  "difficulty": zod.string(),
+  "duration": zod.number().nullable(),
+  "bpm": zod.number().nullable(),
+  "key": zod.string().nullable(),
+  "musicalKey": zod.string().nullish(),
+  "mode": zod.string().nullable(),
+  "timeSignature": zod.string().nullable(),
   "coverUrl": zod.string().nullable(),
-  "bpm": zod.number(),
-  "key": zod.string(),
-  "difficulty": zod.enum(['beginner', 'intermediate', 'advanced']),
-  "playCount": zod.number().optional()
-})
+  "playCount": zod.number(),
+  "featured": zod.boolean(),
+  "status": zod.string(),
+  "fileKey": zod.string().nullable(),
+  "fileUrl": zod.string().nullable(),
+  "mimeType": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
 })
 export const GetUserLibraryResponse = zod.array(GetUserLibraryResponseItem)
 
 
 /**
- * @summary Add a song to user's library
+ * @summary Permanently delete an owned song and storage objects
  */
-export const AddToLibraryBody = zod.object({
-  "songId": zod.number()
+export const DeleteLibrarySongParams = zod.object({
+  "songId": zod.coerce.number()
+})
+
+export const DeleteLibrarySongResponse = zod.object({
+  "deleted": zod.boolean()
 })
 
 
 /**
- * @summary Remove a song from library
+ * @summary Create a quarantine upload URL
  */
-export const RemoveFromLibraryParams = zod.object({
-  "songId": zod.coerce.number()
+export const presignUploadBodyFileNameMax = 255;
+
+export const presignUploadBodyFileSizeMax = 104857600;
+
+export const presignUploadBodyDurationExclusiveMin = 0;
+export const presignUploadBodyDurationMax = 600;
+
+
+
+export const PresignUploadBody = zod.object({
+  "fileName": zod.string().min(1).max(presignUploadBodyFileNameMax),
+  "fileSize": zod.number().min(1).max(presignUploadBodyFileSizeMax),
+  "mimeType": zod.enum(['audio/mpeg', 'audio/wav', 'audio/flac', 'audio/mp4', 'audio/ogg']),
+  "duration": zod.number().gt(presignUploadBodyDurationExclusiveMin).max(presignUploadBodyDurationMax)
+})
+
+export const PresignUploadResponse = zod.object({
+  "uploadUrl": zod.string().url(),
+  "uploadToken": zod.string().uuid(),
+  "expiresAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Verify and finalize a quarantine upload
+ */
+export const confirmUploadBodyExpectedSizeMax = 104857600;
+
+export const confirmUploadBodyTitleMax = 255;
+
+export const confirmUploadBodyDurationExclusiveMin = 0;
+export const confirmUploadBodyDurationMax = 600;
+
+
+
+export const ConfirmUploadBody = zod.object({
+  "uploadToken": zod.string().uuid(),
+  "expectedSize": zod.number().min(1).max(confirmUploadBodyExpectedSizeMax),
+  "expectedMime": zod.enum(['audio/mpeg', 'audio/wav', 'audio/flac', 'audio/mp4', 'audio/ogg']),
+  "title": zod.string().min(1).max(confirmUploadBodyTitleMax).optional(),
+  "duration": zod.number().gt(confirmUploadBodyDurationExclusiveMin).max(confirmUploadBodyDurationMax)
+})
+
+export const ConfirmUploadResponse = zod.object({
+  "songId": zod.number(),
+  "status": zod.enum(['uploaded'])
+})
+
+
+/**
+ * @summary Cancel an owned quarantine upload
+ */
+export const CancelUploadParams = zod.object({
+  "uploadToken": zod.coerce.string().uuid(),
+  "ext": zod.enum(['mp3', 'wav', 'flac', 'm4a', 'ogg'])
+})
+
+export const CancelUploadResponse = zod.object({
+  "cancelled": zod.boolean()
 })
 
 

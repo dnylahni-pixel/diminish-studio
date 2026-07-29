@@ -14,4 +14,11 @@ export interface AudioTrack {
   /** 0-100 */
   volume: number;
   muted: boolean;
+  soloable: boolean;
+  pan: number;
+  streamUrl: string;
+  offset: number;
+  normalizationGain: number;
+  /** @nullable */
+  peaks: number[] | null;
 }

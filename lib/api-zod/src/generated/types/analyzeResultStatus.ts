@@ -6,8 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface LyricLine {
-  time: number;
-  text: string;
-  chords: string[];
-}
+export type AnalyzeResultStatus = typeof AnalyzeResultStatus[keyof typeof AnalyzeResultStatus];
+
+
+export const AnalyzeResultStatus = {
+  completed: 'completed',
+} as const;

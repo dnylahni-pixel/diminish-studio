@@ -1,7 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { Upload as UploadIcon, Link as LinkIcon, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { customFetch } from "@workspace/api-client-react";
+import {
+  cancelUpload,
+  confirmUpload,
+  presignUpload,
+  type AudioMimeType,
+} from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -196,19 +201,11 @@ export function ProcessPage() {
 
     try {
       // Phase 1: Get presigned URL for quarantine bucket
-      const { uploadUrl, uploadToken: token, expiresAt } = await customFetch<{
-        uploadUrl: string;
-        uploadToken: string;
-        expiresAt: string;
-      }>('/api/uploads/presign', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileName: selectedFile.name,
-          fileSize: selectedFile.size,
-          mimeType,
-          duration: audioDuration,
-        }),
+      const { uploadUrl, uploadToken: token } = await presignUpload({
+        fileName: selectedFile.name,
+        fileSize: selectedFile.size,
+        mimeType: mimeType as AudioMimeType,
+        duration: audioDuration,
       });
 
       uploadTokenRef.current = token;
@@ -234,16 +231,12 @@ export function ProcessPage() {
       });
 
       // Phase 3: Confirm upload (validates & copies from quarantine → songs/)
-      const { songId, status } = await customFetch<{ songId: number; status: string }>('/api/uploads/confirm', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          uploadToken: token,
-          expectedSize: selectedFile.size,
-          expectedMime: selectedFile.type || 'audio/mpeg',
-          title: selectedFile.name.replace(/\.[^/.]+$/, ''), // filename without extension
-          duration: audioDuration,
-        }),
+      const { songId, status } = await confirmUpload({
+        uploadToken: token,
+        expectedSize: selectedFile.size,
+        expectedMime: (selectedFile.type || 'audio/mpeg') as AudioMimeType,
+        title: selectedFile.name.replace(/\.[^/.]+$/, ''),
+        duration: audioDuration,
       });
 
       if (status !== 'uploaded') {
@@ -326,7 +319,10 @@ export function ProcessPage() {
     const token = uploadTokenRef.current;
     const ext = MIME_TO_EXT[mimeTypeRef.current] || "mp3";
     if (token) {
-      customFetch(`/api/uploads/${token}/${ext}`, { method: "DELETE" }).catch(() => {});
+      cancelUpload(
+        token,
+        ext as "mp3" | "wav" | "flac" | "m4a" | "ogg",
+      ).catch(() => {});
     }
 
     // 3. Full client cleanup

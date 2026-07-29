@@ -19,8 +19,10 @@ tags:
     description: User song library
   - name: learning
     description: Learning sessions
-  - name: processing
-    description: Song processing jobs
+  - name: uploads
+    description: Direct upload lifecycle
+  - name: analysis
+    description: Song analysis operations
 
 paths:
   /healthz:
@@ -35,6 +37,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /readyz:
+    get:
+      operationId: readinessCheck
+      tags: [health]
+      summary: Check runtime dependencies
+      responses:
+        "200":
+          description: Dependencies are ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessStatus"
+        "503":
+          description: A dependency is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessStatus"
 
   /songs:
     get:
@@ -64,7 +85,7 @@ paths:
     get:
       operationId: getSong
       tags: [songs]
-      summary: Get a single song with full chord and lyric data
+      summary: Get public song metadata or an owned private upload
       parameters:
         - name: id
           in: path
@@ -77,9 +98,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SongDetail"
+                $ref: "#/components/schemas/Song"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "404":
-          description: Not found
+          $ref: "#/components/responses/NotFound"
 
   /songs/featured:
     get:
@@ -96,43 +119,61 @@ paths:
                 items:
                   $ref: "#/components/schemas/Song"
 
-  /songs/process:
+  /songs/{id}/analyze:
     post:
-      operationId: processSong
-      tags: [processing]
-      summary: Submit a song URL or upload for processing
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ProcessSongInput"
-      responses:
-        "202":
-          description: Processing job created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProcessingJob"
-
-  /songs/process/{jobId}:
-    get:
-      operationId: getProcessingJob
-      tags: [processing]
-      summary: Get status of a processing job
+      operationId: analyzeSong
+      tags: [analysis]
+      summary: Analyze an owned uploaded song
       parameters:
-        - name: jobId
+        - name: id
           in: path
           required: true
           schema:
-            type: string
+            type: integer
       responses:
         "200":
-          description: Job status
+          description: Analysis completed
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ProcessingJob"
+                $ref: "#/components/schemas/AnalyzeResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
+
+  /song-details/{id}:
+    get:
+      operationId: getSongDetails
+      tags: [songs]
+      summary: Get Player aggregate with timelines and signed track URLs
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Player song details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SongDetail"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /chords:
     get:
@@ -209,44 +250,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/User"
 
-  /users/register:
-    post:
-      operationId: registerUser
-      tags: [users]
-      summary: Register a new user
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/RegisterInput"
-      responses:
-        "201":
-          description: Created user
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/User"
-
-  /users/login:
-    post:
-      operationId: loginUser
-      tags: [users]
-      summary: Login user
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/LoginInput"
-      responses:
-        "200":
-          description: Logged in user
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/User"
-
   /library/quota:
     get:
       operationId: getStorageQuota
@@ -264,7 +267,7 @@ paths:
     get:
       operationId: getUserLibrary
       tags: [library]
-      summary: Get user's saved song library
+      summary: Get user's owned uploaded songs
       responses:
         "200":
           description: User library
@@ -273,30 +276,15 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/LibraryEntry"
-    post:
-      operationId: addToLibrary
-      tags: [library]
-      summary: Add a song to user's library
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/LibraryInput"
-      responses:
-        "201":
-          description: Added to library
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/LibraryEntry"
+                  $ref: "#/components/schemas/LibrarySong"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /library/{songId}:
     delete:
-      operationId: removeFromLibrary
+      operationId: deleteLibrarySong
       tags: [library]
-      summary: Remove a song from library
+      summary: Permanently delete an owned song and storage objects
       parameters:
         - name: songId
           in: path
@@ -304,8 +292,102 @@ paths:
           schema:
             type: integer
       responses:
-        "204":
-          description: Removed
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteSongResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /uploads/presign:
+    post:
+      operationId: presignUpload
+      tags: [uploads]
+      summary: Create a quarantine upload URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PresignUploadInput"
+      responses:
+        "200":
+          description: Presigned upload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PresignUploadResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /uploads/confirm:
+    post:
+      operationId: confirmUpload
+      tags: [uploads]
+      summary: Verify and finalize a quarantine upload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfirmUploadInput"
+      responses:
+        "200":
+          description: Upload finalized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfirmUploadResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "410":
+          $ref: "#/components/responses/Gone"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+
+  /uploads/{uploadToken}/{ext}:
+    delete:
+      operationId: cancelUpload
+      tags: [uploads]
+      summary: Cancel an owned quarantine upload
+      parameters:
+        - name: uploadToken
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: ext
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [mp3, wav, flac, m4a, ogg]
+      responses:
+        "200":
+          description: Upload cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelUploadResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /learning/sessions:
     get:
@@ -380,7 +462,79 @@ paths:
                   $ref: "#/components/schemas/MasteredChord"
 
 components:
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    Conflict:
+      description: Resource state conflict
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    Gone:
+      description: Resource expired or no longer exists
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    PayloadTooLarge:
+      description: File or quota limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    TooManyRequests:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    BadGateway:
+      description: Provider request failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    ServiceUnavailable:
+      description: Service unavailable
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    GatewayTimeout:
+      description: Provider request timed out
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+
   schemas:
+    ApiError:
+      type: object
+      required: [error, code]
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        details: {}
+
     HealthStatus:
       type: object
       properties:
@@ -389,36 +543,67 @@ components:
       required:
         - status
 
+    ReadinessStatus:
+      type: object
+      required: [status, dependencies]
+      properties:
+        status:
+          type: string
+          enum: [ok, error]
+        dependencies:
+          type: object
+          required: [database]
+          properties:
+            database:
+              type: string
+              enum: [ok, error]
+
     Song:
       type: object
-      required: [id, title, artist, genre, duration, coverUrl, bpm, key, difficulty]
+      required: [id, title, artist, artistId, difficulty, duration, bpm, key, mode, timeSignature, coverUrl, playCount, featured, createdAt, updatedAt]
       properties:
         id:
           type: integer
         title:
           type: string
         artist:
-          type: string
-        genre:
-          type: string
+          type: ["string", "null"]
+        artistId:
+          type: ["integer", "null"]
         duration:
-          type: integer
+          type: ["number", "null"]
           description: Duration in seconds
         coverUrl:
           type: ["string", "null"]
         bpm:
-          type: integer
+          type: ["number", "null"]
         key:
-          type: string
+          type: ["string", "null"]
+        musicalKey:
+          type: ["string", "null"]
+        mode:
+          type: ["string", "null"]
+        timeSignature:
+          type: ["string", "null"]
         difficulty:
           type: string
           enum: [beginner, intermediate, advanced]
         playCount:
           type: integer
+        featured:
+          type: boolean
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
 
     SongDetail:
       type: object
-      required: [id, title, artist, genre, duration, coverUrl, bpm, key, difficulty, lyrics, chordTimeline, tracks]
+      required: [id, title, artist, artistId, coverUrl, difficulty, duration, bpm, key, mode, timeSignature, version, analysisStatus, generatedAt, beatGrid, chordTimeline, lyrics, sections, tempoTimeline, keyTimeline, tracks, masterTrackUrl, playCount, featured, createdAt, updatedAt]
       properties:
         id:
           type: integer
@@ -426,18 +611,33 @@ components:
           type: string
         artist:
           type: string
-        genre:
-          type: string
+        artistId:
+          type: ["integer", "null"]
         duration:
-          type: integer
+          type: number
         coverUrl:
           type: ["string", "null"]
         bpm:
-          type: integer
+          type: number
         key:
           type: string
+        mode:
+          type: ["string", "null"]
         difficulty:
           type: string
+        timeSignature:
+          $ref: "#/components/schemas/TimeSignature"
+        version:
+          type: ["string", "null"]
+        analysisStatus:
+          type: string
+        generatedAt:
+          type: ["string", "null"]
+          format: date-time
+        beatGrid:
+          type: array
+          items:
+            $ref: "#/components/schemas/BeatPoint"
         lyrics:
           type: array
           items:
@@ -446,10 +646,59 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ChordMeasure"
+        sections:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        tempoTimeline:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        keyTimeline:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
         tracks:
           type: array
           items:
             $ref: "#/components/schemas/AudioTrack"
+        masterTrackUrl:
+          type: ["string", "null"]
+        playCount:
+          type: integer
+        featured:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    TimeSignature:
+      type: object
+      required: [numerator, denominator]
+      properties:
+        numerator:
+          type: integer
+        denominator:
+          type: integer
+
+    BeatPoint:
+      type: object
+      required: [time, beat, measure, isDownbeat]
+      properties:
+        time:
+          type: number
+        beat:
+          type: integer
+        measure:
+          type: integer
+        isDownbeat:
+          type: boolean
 
     LyricLine:
       type: object
@@ -457,7 +706,6 @@ components:
       properties:
         time:
           type: number
-          description: Time in seconds
         text:
           type: string
         chords:
@@ -480,13 +728,13 @@ components:
 
     AudioTrack:
       type: object
-      required: [id, instrument, label, volume, muted]
+      required: [id, instrument, label, volume, muted, soloable, pan, streamUrl, offset, normalizationGain, peaks]
       properties:
         id:
           type: integer
         instrument:
           type: string
-          enum: [guitar, piano, bass, drums, vocal, synth]
+          enum: [master, guitar, piano, bass, drums, vocal, other]
         label:
           type: string
         volume:
@@ -494,37 +742,34 @@ components:
           description: 0-100
         muted:
           type: boolean
-
-    ProcessSongInput:
-      type: object
-      required: [source]
-      properties:
-        source:
+        soloable:
+          type: boolean
+        pan:
+          type: number
+        streamUrl:
           type: string
-          description: URL or "upload"
-        title:
-          type: ["string", "null"]
-        artist:
-          type: ["string", "null"]
+        offset:
+          type: number
+        normalizationGain:
+          type: number
+        peaks:
+          type: ["array", "null"]
+          items:
+            type: number
 
-    ProcessingJob:
+    AnalyzeResult:
       type: object
-      required: [jobId, status, progress, createdAt]
+      required: [songId, status, beatCount, chordCount]
       properties:
-        jobId:
-          type: string
+        songId:
+          type: integer
         status:
           type: string
-          enum: [queued, analyzing, extracting_chords, syncing_lyrics, finalizing, done, error]
-        progress:
+          enum: [completed]
+        beatCount:
           type: integer
-          description: 0-100
-        songId:
-          type: ["integer", "null"]
-        errorMessage:
-          type: ["string", "null"]
-        createdAt:
-          type: string
+        chordCount:
+          type: integer
 
     Chord:
       type: object
@@ -580,38 +825,52 @@ components:
         preferredInstrument:
           type: string
 
-    RegisterInput:
+    LibrarySong:
       type: object
-      required: [username, email, password]
-      properties:
-        username:
-          type: string
-        email:
-          type: string
-        password:
-          type: string
-
-    LoginInput:
-      type: object
-      required: [email, password]
-      properties:
-        email:
-          type: string
-        password:
-          type: string
-
-    LibraryEntry:
-      type: object
-      required: [id, songId, addedAt, song]
+      required: [id, title, artist, artistId, difficulty, duration, bpm, key, mode, timeSignature, coverUrl, playCount, featured, status, fileKey, fileUrl, mimeType, createdAt, updatedAt]
       properties:
         id:
           type: integer
-        songId:
-          type: integer
-        addedAt:
+        title:
           type: string
-        song:
-          $ref: "#/components/schemas/Song"
+        artist:
+          type: ["string", "null"]
+        artistId:
+          type: ["integer", "null"]
+        difficulty:
+          type: string
+        duration:
+          type: ["number", "null"]
+        bpm:
+          type: ["number", "null"]
+        key:
+          type: ["string", "null"]
+        musicalKey:
+          type: ["string", "null"]
+        mode:
+          type: ["string", "null"]
+        timeSignature:
+          type: ["string", "null"]
+        coverUrl:
+          type: ["string", "null"]
+        playCount:
+          type: integer
+        featured:
+          type: boolean
+        status:
+          type: string
+        fileKey:
+          type: ["string", "null"]
+        fileUrl:
+          type: ["string", "null"]
+        mimeType:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
 
     StorageQuota:
       type: object
@@ -624,12 +883,88 @@ components:
           type: integer
           description: Maximum bytes allowed for the user (configurable per-user)
 
-    LibraryInput:
+    DeleteSongResult:
       type: object
-      required: [songId]
+      required: [deleted]
+      properties:
+        deleted:
+          type: boolean
+
+    AudioMimeType:
+      type: string
+      enum: [audio/mpeg, audio/wav, audio/flac, audio/mp4, audio/ogg]
+
+    PresignUploadInput:
+      type: object
+      required: [fileName, fileSize, mimeType, duration]
+      properties:
+        fileName:
+          type: string
+          minLength: 1
+          maxLength: 255
+        fileSize:
+          type: integer
+          minimum: 1
+          maximum: 104857600
+        mimeType:
+          $ref: "#/components/schemas/AudioMimeType"
+        duration:
+          type: number
+          exclusiveMinimum: 0
+          maximum: 600
+
+    PresignUploadResult:
+      type: object
+      required: [uploadUrl, uploadToken, expiresAt]
+      properties:
+        uploadUrl:
+          type: string
+          format: uri
+        uploadToken:
+          type: string
+          format: uuid
+        expiresAt:
+          type: string
+          format: date-time
+
+    ConfirmUploadInput:
+      type: object
+      required: [uploadToken, expectedSize, expectedMime, duration]
+      properties:
+        uploadToken:
+          type: string
+          format: uuid
+        expectedSize:
+          type: integer
+          minimum: 1
+          maximum: 104857600
+        expectedMime:
+          $ref: "#/components/schemas/AudioMimeType"
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        duration:
+          type: number
+          exclusiveMinimum: 0
+          maximum: 600
+
+    ConfirmUploadResult:
+      type: object
+      required: [songId, status]
       properties:
         songId:
           type: integer
+        status:
+          type: string
+          enum: [uploaded]
+
+    CancelUploadResult:
+      type: object
+      required: [cancelled]
+      properties:
+        cancelled:
+          type: boolean
 
     LearningSession:
       type: object

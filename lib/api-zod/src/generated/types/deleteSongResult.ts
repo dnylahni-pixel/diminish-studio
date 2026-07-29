@@ -6,6 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface LibraryInput {
-  songId: number;
+export interface DeleteSongResult {
+  deleted: boolean;
 }

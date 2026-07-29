@@ -5,11 +5,9 @@
  * DiminishStudio API - Music learning and chord analysis platform
  * OpenAPI spec version: 0.1.0
  */
-import type { Song } from './song';
+import type { ApiError } from './apiError';
 
-export interface LibraryEntry {
-  id: number;
-  songId: number;
-  addedAt: string;
-  song: Song;
-}
+/**
+ * Resource state conflict
+ */
+export type ConflictResponse = ApiError;

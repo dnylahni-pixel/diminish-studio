@@ -5,9 +5,9 @@
  * DiminishStudio API - Music learning and chord analysis platform
  * OpenAPI spec version: 0.1.0
  */
+import type { ApiError } from './apiError';
 
-export interface RegisterInput {
-  username: string;
-  email: string;
-  password: string;
-}
+/**
+ * Invalid request
+ */
+export type BadRequestResponse = ApiError;
