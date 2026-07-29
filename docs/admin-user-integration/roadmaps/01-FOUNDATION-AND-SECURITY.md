@@ -15,7 +15,7 @@
   - Evidence: current branch، HEAD، counts، schema drift و query list sanitized.
   - Completion: snapshot قابل بازتولید و تمام `UNK-001..007` تعیین یا صریح BLOCKED شوند.
   - Report: `task-reports/FND-001-safe-branch-environment-db-metadata-snapshot.md`
-  - Commit: `PENDING`
+  - Commit: `25b9529adafc5ef58e72bc4699e3ebd07e1d1b3f`
 
 - [ ] `FND-002` ثبت decision matrix محیط و migration ownership
   - Depends on: `FND-001`

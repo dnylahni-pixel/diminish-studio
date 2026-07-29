@@ -6,8 +6,8 @@
 - برنچ الزامی: `docs/admin-user-plan-enforcement-analysis`
 - برنچ مشاهده‌شده: `docs/admin-user-plan-enforcement-analysis`
 - commit پایه: `ea5c34e3b1d2875d5110d95db82ec9aa47aa22cf`
-- commit اجرایی: `see git commit containing this report`
-- commit ثبت Roadmap: `PENDING`
+- commit اجرایی: `25b9529adafc5ef58e72bc4699e3ebd07e1d1b3f`
+- commit ثبت Roadmap: `see git commit containing this update`
 - تاریخ UTC: `2026-07-29T12:43:50Z`
 
 ## محدوده
@@ -173,6 +173,6 @@
 
 - checkbox تغییر کرد: `YES`
 - report path ثبت شد: `YES`
-- commit hash ثبت شد: `PENDING`
+- commit hash ثبت شد: `YES`
 
 تیک فقط برای `SUCCESS` و پس از تمام معیارها مجاز است.
