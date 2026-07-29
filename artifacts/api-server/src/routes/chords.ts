@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { chordsTable, learningSessionsTable, chordAttemptsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
+import { sendError } from "../lib/http-errors";
 
 const router = Router();
 
@@ -13,13 +14,13 @@ router.get("/", async (req, res) => {
     let chords = await db.select().from(chordsTable);
     if (instrument) chords = chords.filter(c => c.instrument === instrument);
     if (difficulty) chords = chords.filter(c => c.difficulty === difficulty);
-    res.json(chords.map(c => ({
+    return res.json(chords.map(c => ({
       ...c,
       fingers: c.fingers.map(Number),
       strings: c.strings.map(Number),
     })));
   } catch (e) {
-    res.status(500).json({ error: "Failed to list chords" });
+    return sendError(res, 500, "CHORD_LIST_FAILED", "Failed to list chords");
   }
 });
 
@@ -27,10 +28,12 @@ router.get("/:name", async (req, res) => {
   try {
     const { name } = req.params;
     const [chord] = await db.select().from(chordsTable).where(eq(chordsTable.name, name));
-    if (!chord) return res.status(404).json({ error: "Chord not found" });
-    res.json({ ...chord, fingers: chord.fingers.map(Number), strings: chord.strings.map(Number) });
+    if (!chord) {
+      return sendError(res, 404, "CHORD_NOT_FOUND", "Chord not found");
+    }
+    return res.json({ ...chord, fingers: chord.fingers.map(Number), strings: chord.strings.map(Number) });
   } catch (e) {
-    res.status(500).json({ error: "Failed to get chord" });
+    return sendError(res, 500, "CHORD_READ_FAILED", "Failed to get chord");
   }
 });
 

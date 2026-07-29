@@ -19,9 +19,10 @@ import {
   getStorageQuota,
   decrementStorageUsed,
 } from "./uploads/uploads.repository";
-import { getOrCreateUser } from "../lib/user-utils";
+import { findUserByClerkId, getOrCreateUser } from "../lib/user-utils";
 import { ClerkServiceError, ClerkErrorKind } from "../lib/errors";
 import { backendConfig } from "../config";
+import { sendError } from "../lib/http-errors";
 
 const s3Client = new S3Client({
   endpoint: backendConfig.b2.endpoint,
@@ -66,23 +67,23 @@ async function resolveDbUser(clerkUserId: string) {
 
 /** Look up a user row WITHOUT auto-create (for destructive / sensitive operations) */
 async function findDbUser(clerkUserId: string) {
-  const [user] = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.clerkId, clerkUserId));
-  return user ?? null;
+  return findUserByClerkId(clerkUserId);
 }
 
 /** Map a ClerkServiceError into a response-contract shape */
 function clerkErrorToResponse(err: ClerkServiceError) {
   switch (err.kind) {
     case ClerkErrorKind.NotFound:
-      return { status: 401, body: { error: "Invalid session" } };
+      return {
+        status: 401,
+        body: { error: "Invalid session", code: "INVALID_SESSION" },
+      };
     case ClerkErrorKind.RateLimited:
       return {
         status: 429,
         body: {
           error: "Authentication service busy",
+          code: "AUTH_RATE_LIMITED",
           retryAfterSeconds: 60,
         },
       };
@@ -90,7 +91,10 @@ function clerkErrorToResponse(err: ClerkServiceError) {
     default:
       return {
         status: 502,
-        body: { error: "Authentication service unavailable" },
+        body: {
+          error: "Authentication service unavailable",
+          code: "AUTH_SERVICE_UNAVAILABLE",
+        },
       };
   }
 }
@@ -98,7 +102,9 @@ function clerkErrorToResponse(err: ClerkServiceError) {
 router.get("/", async (req, res) => {
   try {
     const { userId } = getAuth(req);
-    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+    if (!userId) {
+      return sendError(res, 401, "UNAUTHORIZED", "Unauthorized");
+    }
     const dbUser = await resolveDbUser(userId);
     const result = await db
       .select({
@@ -138,14 +144,21 @@ router.get("/", async (req, res) => {
       return res.status(status).json(body);
     }
     console.error(e);
-    return res.status(500).json({ error: "Failed to get library" });
+    return sendError(
+      res,
+      500,
+      "LIBRARY_READ_FAILED",
+      "Failed to get library",
+    );
   }
 });
 
 router.get("/quota", async (req, res) => {
   try {
     const { userId } = getAuth(req);
-    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+    if (!userId) {
+      return sendError(res, 401, "UNAUTHORIZED", "Unauthorized");
+    }
     const dbUser = await resolveDbUser(userId);
     const quota = await getStorageQuota(dbUser.id);
     return res.json({
@@ -158,22 +171,36 @@ router.get("/quota", async (req, res) => {
       return res.status(status).json(body);
     }
     console.error(e);
-    return res.status(500).json({ error: "Failed to get storage quota" });
+    return sendError(
+      res,
+      500,
+      "STORAGE_QUOTA_READ_FAILED",
+      "Failed to get storage quota",
+    );
   }
 });
 
 router.delete("/:id", async (req, res) => {
   try {
     const { userId } = getAuth(req);
-    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+    if (!userId) {
+      return sendError(res, 401, "UNAUTHORIZED", "Unauthorized");
+    }
 
     const songId = parseInt(req.params.id);
-    if (isNaN(songId)) return res.status(400).json({ error: "Invalid song ID" });
+    if (isNaN(songId)) {
+      return sendError(res, 400, "INVALID_SONG_ID", "Invalid song ID");
+    }
 
     // DELETE must NOT auto-create user. Only allow if user row already exists.
     const dbUser = await findDbUser(userId);
     if (!dbUser) {
-      return res.status(401).json({ error: "User account not found" });
+      return sendError(
+        res,
+        401,
+        "USER_ACCOUNT_NOT_FOUND",
+        "User account not found",
+      );
     }
 
     // 1. Find song with stems info, verify ownership
@@ -186,7 +213,9 @@ router.delete("/:id", async (req, res) => {
       .from(songs)
       .where(and(eq(songs.id, songId), eq(songs.userId, dbUser.id)));
 
-    if (!song) return res.status(404).json({ error: "Song not found" });
+    if (!song) {
+      return sendError(res, 404, "SONG_NOT_FOUND", "Song not found");
+    }
 
     // 2. Fetch stem file keys (to delete from S3)
     const stemsToDelete: string[] = [];
@@ -233,7 +262,12 @@ router.delete("/:id", async (req, res) => {
     return res.json({ deleted: true });
   } catch (e) {
     console.error(e);
-    return res.status(500).json({ error: "Failed to delete song" });
+    return sendError(
+      res,
+      500,
+      "LIBRARY_SONG_DELETE_FAILED",
+      "Failed to delete song",
+    );
   }
 });
 

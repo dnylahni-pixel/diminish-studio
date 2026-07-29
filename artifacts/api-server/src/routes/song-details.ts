@@ -5,6 +5,9 @@ import { eq } from "drizzle-orm";
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { backendConfig } from "../config";
+import { getAuth } from "@clerk/express";
+import { findUserByClerkId } from "../lib/user-utils";
+import { sendError } from "../lib/http-errors";
 
 const s3Client = new S3Client({
   endpoint: backendConfig.b2.endpoint,
@@ -43,7 +46,7 @@ router.get("/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
-      return res.status(400).json({ error: "Invalid song ID" });
+      return sendError(res, 400, "INVALID_SONG_ID", "Invalid song ID");
     }
 
     // Fetch base song data with artist
@@ -63,6 +66,8 @@ router.get("/:id", async (req, res) => {
         playCount: songs.playCount,
         featured: songs.featured,
         fileKey: songs.fileKey,
+        status: songs.status,
+        userId: songs.userId,
         createdAt: songs.createdAt,
         updatedAt: songs.updatedAt,
       })
@@ -71,7 +76,16 @@ router.get("/:id", async (req, res) => {
       .where(eq(songs.id, id));
 
     if (!songData) {
-      return res.status(404).json({ error: "Song not found" });
+      return sendError(res, 404, "SONG_NOT_FOUND", "Song not found");
+    }
+
+    if (songData.status !== "published") {
+      const { userId } = getAuth(req);
+      const currentUser = userId ? await findUserByClerkId(userId) : null;
+
+      if (!currentUser || songData.userId !== currentUser.id) {
+        return sendError(res, 404, "SONG_NOT_FOUND", "Song not found");
+      }
     }
 
     // Fetch analysis data
@@ -205,10 +219,12 @@ router.get("/:id", async (req, res) => {
     return res.json(response);
   } catch (error) {
     console.error("Error fetching song details:", error);
-    return res.status(500).json({ 
-      error: "Failed to fetch song details",
-      message: error instanceof Error ? error.message : "Unknown error"
-    });
+    return sendError(
+      res,
+      500,
+      "SONG_DETAILS_READ_FAILED",
+      "Failed to fetch song details",
+    );
   }
 });
 

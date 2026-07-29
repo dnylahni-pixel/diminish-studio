@@ -5,6 +5,9 @@ import { db } from "@workspace/db";
 import { songs, songAnalyses } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { backendConfig } from "../config";
+import { getAuth } from "@clerk/express";
+import { findUserByClerkId } from "../lib/user-utils";
+import { sendError } from "../lib/http-errors";
 
 const router = Router();
 
@@ -43,23 +46,47 @@ interface RunPodChord {
  */
 router.post("/:id/analyze", async (req, res) => {
   try {
+    const { userId } = getAuth(req);
+    if (!userId) {
+      return sendError(res, 401, "UNAUTHORIZED", "Unauthorized");
+    }
+
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
-      return res.status(400).json({ error: "Invalid song ID" });
+      return sendError(res, 400, "INVALID_SONG_ID", "Invalid song ID");
     }
 
     // 1. Read fileKey from songs table and generate a fresh signed URL
     const [song] = await db
-      .select({ fileKey: songs.fileKey })
+      .select({ fileKey: songs.fileKey, userId: songs.userId })
       .from(songs)
       .where(eq(songs.id, id));
 
     if (!song) {
-      return res.status(404).json({ error: "Song not found" });
+      return sendError(res, 404, "SONG_NOT_FOUND", "Song not found");
+    }
+
+    const currentUser = await findUserByClerkId(userId);
+    if (!currentUser || song.userId !== currentUser.id) {
+      return sendError(res, 404, "SONG_NOT_FOUND", "Song not found");
     }
 
     if (!song.fileKey) {
-      return res.status(400).json({ error: "Song has no fileKey — cannot analyze" });
+      return sendError(
+        res,
+        409,
+        "SONG_FILE_UNAVAILABLE",
+        "Song file is unavailable for analysis",
+      );
+    }
+
+    if (!backendConfig.runPod) {
+      return sendError(
+        res,
+        503,
+        "ANALYSIS_UNAVAILABLE",
+        "Analysis service is not configured",
+      );
     }
 
     // Generate a fresh signed GET URL so RunPod can download the file
@@ -82,16 +109,6 @@ router.post("/:id/analyze", async (req, res) => {
       });
 
     // 3. Call RunPod
-    if (!backendConfig.runPod) {
-      // Rollback status
-      await db
-        .update(songAnalyses)
-        .set({ analysisStatus: "error" })
-        .where(eq(songAnalyses.songId, id));
-
-      return res.status(500).json({ error: "RunPod not configured (missing env vars)" });
-    }
-
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 300_000); // 5 min timeout
 
@@ -116,9 +133,19 @@ router.post("/:id/analyze", async (req, res) => {
         .where(eq(songAnalyses.songId, id));
 
       if (err.name === "AbortError") {
-        return res.status(504).json({ error: "RunPod request timed out" });
+        return sendError(
+          res,
+          504,
+          "ANALYSIS_TIMEOUT",
+          "Analysis request timed out",
+        );
       }
-      return res.status(502).json({ error: `RunPod request failed: ${err.message}` });
+      return sendError(
+        res,
+        502,
+        "ANALYSIS_PROVIDER_UNAVAILABLE",
+        "Analysis provider request failed",
+      );
     }
 
     clearTimeout(timeout);
@@ -129,8 +156,13 @@ router.post("/:id/analyze", async (req, res) => {
         .set({ analysisStatus: "error" })
         .where(eq(songAnalyses.songId, id));
 
-      const text = await runpodResp.text().catch(() => "");
-      return res.status(502).json({ error: `RunPod returned ${runpodResp.status}: ${text}` });
+      await runpodResp.body?.cancel().catch(() => {});
+      return sendError(
+        res,
+        502,
+        "ANALYSIS_PROVIDER_ERROR",
+        "Analysis provider returned an error",
+      );
     }
 
     const payload = await runpodResp.json() as any;
@@ -226,7 +258,12 @@ router.post("/:id/analyze", async (req, res) => {
       }
     } catch {}
 
-    return res.status(500).json({ error: err.message || "Internal server error" });
+    return sendError(
+      res,
+      500,
+      "ANALYSIS_FAILED",
+      "Failed to analyze song",
+    );
   }
 });
 

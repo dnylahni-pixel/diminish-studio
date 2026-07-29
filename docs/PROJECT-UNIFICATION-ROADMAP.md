@@ -598,16 +598,16 @@ Render نباید هنگام start migration اجرا کند.
 
 ### Phase 3 — تثبیت Runtime قبل از Contract
 
-وضعیت: شروع نشده
+وضعیت: تکمیل شده
 
-- [ ] رفع دو خطای Backend typecheck
-- [ ] تعیین behavior نهایی Song Details
-- [ ] تعیین behavior نهایی Analyze
-- [ ] تعیین lifecycle کامل Upload
-- [ ] تعیین library detach در برابر destructive delete
-- [ ] حذف یا تثبیت `/songs/process*`
-- [ ] حذف یا تثبیت register/login
-- [ ] error response استاندارد
+- [x] رفع دو خطای Backend typecheck
+- [x] تعیین behavior نهایی Song Details
+- [x] تعیین behavior نهایی Analyze
+- [x] تعیین lifecycle کامل Upload
+- [x] تعیین library detach در برابر destructive delete
+- [x] حذف یا تثبیت `/songs/process*`
+- [x] حذف یا تثبیت register/login
+- [x] error response استاندارد
 
 معیار خروج:
 

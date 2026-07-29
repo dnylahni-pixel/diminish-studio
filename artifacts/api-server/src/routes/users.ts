@@ -16,6 +16,7 @@ import { usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { getOrCreateUser, serializeUser } from "../lib/user-utils";
 import { ClerkServiceError, ClerkErrorKind } from "../lib/errors";
+import { sendError } from "../lib/http-errors";
 
 const router = Router();
 
@@ -23,12 +24,16 @@ const router = Router();
 function clerkErrorToResponse(err: ClerkServiceError) {
   switch (err.kind) {
     case ClerkErrorKind.NotFound:
-      return { status: 401, body: { error: "Invalid session" } };
+      return {
+        status: 401,
+        body: { error: "Invalid session", code: "INVALID_SESSION" },
+      };
     case ClerkErrorKind.RateLimited:
       return {
         status: 429,
         body: {
           error: "Authentication service busy",
+          code: "AUTH_RATE_LIMITED",
           retryAfterSeconds: 60,
         },
       };
@@ -36,7 +41,10 @@ function clerkErrorToResponse(err: ClerkServiceError) {
     default:
       return {
         status: 502,
-        body: { error: "Authentication service unavailable" },
+        body: {
+          error: "Authentication service unavailable",
+          code: "AUTH_SERVICE_UNAVAILABLE",
+        },
       };
   }
 }
@@ -44,7 +52,9 @@ function clerkErrorToResponse(err: ClerkServiceError) {
 router.get("/me", async (req, res) => {
   try {
     const { userId } = getAuth(req);
-    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+    if (!userId) {
+      return sendError(res, 401, "UNAUTHORIZED", "Unauthorized");
+    }
     const user = await getOrCreateUser(userId);
     return res.json(serializeUser(user));
   } catch (e) {
@@ -53,14 +63,16 @@ router.get("/me", async (req, res) => {
       return res.status(status).json(body);
     }
     console.error(e);
-    return res.status(500).json({ error: "Failed to get user" });
+    return sendError(res, 500, "USER_READ_FAILED", "Failed to get user");
   }
 });
 
 router.patch("/me", async (req, res) => {
   try {
     const { userId } = getAuth(req);
-    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+    if (!userId) {
+      return sendError(res, 401, "UNAUTHORIZED", "Unauthorized");
+    }
     const user = await getOrCreateUser(userId);
     const { username, bio, preferredInstrument } = req.body;
     const [updated] = await db
@@ -75,15 +87,8 @@ router.patch("/me", async (req, res) => {
       return res.status(status).json(body);
     }
     console.error(e);
-    return res.status(500).json({ error: "Failed to update user" });
+    return sendError(res, 500, "USER_UPDATE_FAILED", "Failed to update user");
   }
 });
-
-router.post("/register", async (req, res) =>
-  res.status(400).json({ error: "Use Clerk sign-up" }),
-);
-router.post("/login", async (req, res) =>
-  res.status(400).json({ error: "Use Clerk sign-in" }),
-);
 
 export default router;

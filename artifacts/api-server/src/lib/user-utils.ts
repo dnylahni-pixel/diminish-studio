@@ -10,6 +10,15 @@ const clerkClient = createClerkClient({
   secretKey: backendConfig.clerk.secretKey,
 });
 
+export async function findUserByClerkId(clerkUserId: string): Promise<User | null> {
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.clerkId, clerkUserId));
+
+  return user ?? null;
+}
+
 /**
  * Raised when getOrCreateUser fails because of a race condition AND
  * the winning row still cannot be found (should never happen).
@@ -36,10 +45,7 @@ export class UserCreationRaceError extends Error {
  */
 export async function getOrCreateUser(clerkUserId: string): Promise<User> {
   // 1. Fast path — user already exists
-  const [existing] = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.clerkId, clerkUserId));
+  const existing = await findUserByClerkId(clerkUserId);
 
   if (existing) return existing;
 
