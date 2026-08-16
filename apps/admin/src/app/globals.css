@@ -1,0 +1,327 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   AURORA UI — DESIGN FOUNDATIONS
+   A token-driven foundation layer. Every visual value used by components
+   should originate from a token defined here. Nothing below is tied to any
+   product, domain, or business meaning — these are pure UI primitives.
+   ========================================================================== */
+
+@theme {
+  /* ---------------------------------------------------------------------
+     COLOR — Neutral scale (surfaces, text, borders)
+     --------------------------------------------------------------------- */
+  --color-neutral-0: #ffffff;
+  --color-neutral-50: #f8f9fb;
+  --color-neutral-100: #f1f2f6;
+  --color-neutral-200: #e6e8ee;
+  --color-neutral-300: #d6d9e2;
+  --color-neutral-400: #b3b7c4;
+  --color-neutral-500: #8a8fa0;
+  --color-neutral-600: #666b7d;
+  --color-neutral-700: #4b4f60;
+  --color-neutral-800: #343744;
+  --color-neutral-900: #202230;
+  --color-neutral-950: #14151d;
+
+  /* COLOR — Primary brand-neutral accent (used sparingly, no product meaning) */
+  --color-primary-50: #f5f4ff;
+  --color-primary-100: #ebe8ff;
+  --color-primary-200: #d7d1ff;
+  --color-primary-300: #b7abff;
+  --color-primary-400: #9583fd;
+  --color-primary-500: #7c67f2;
+  --color-primary-600: #6650d9;
+  --color-primary-700: #5340b0;
+  --color-primary-800: #423490;
+  --color-primary-900: #352a70;
+  --color-primary-950: #201a47;
+
+  /* COLOR — Semantic: success */
+  --color-success-50: #eefbf4;
+  --color-success-100: #d6f5e2;
+  --color-success-200: #aeeac9;
+  --color-success-300: #7bd9ac;
+  --color-success-400: #4cc290;
+  --color-success-500: #2ea875;
+  --color-success-600: #22885f;
+  --color-success-700: #1d6d4e;
+  --color-success-800: #17573f;
+  --color-success-900: #124633;
+
+  /* COLOR — Semantic: warning */
+  --color-warning-50: #fff9ec;
+  --color-warning-100: #ffeecb;
+  --color-warning-200: #ffdd97;
+  --color-warning-300: #fec55c;
+  --color-warning-400: #f5a72e;
+  --color-warning-500: #e28914;
+  --color-warning-600: #bd6c0e;
+  --color-warning-700: #96530f;
+  --color-warning-800: #794310;
+  --color-warning-900: #623710;
+
+  /* COLOR — Semantic: danger */
+  --color-danger-50: #fef2f3;
+  --color-danger-100: #fee2e4;
+  --color-danger-200: #fdc8cb;
+  --color-danger-300: #fa9fa5;
+  --color-danger-400: #f2727b;
+  --color-danger-500: #e34e59;
+  --color-danger-600: #c5303c;
+  --color-danger-700: #a12631;
+  --color-danger-800: #82222c;
+  --color-danger-900: #6c2029;
+
+  /* COLOR — Semantic: info */
+  --color-info-50: #eff8ff;
+  --color-info-100: #dcefff;
+  --color-info-200: #b9e0ff;
+  --color-info-300: #86c9ff;
+  --color-info-400: #4fadfb;
+  --color-info-500: #2790ef;
+  --color-info-600: #1972cd;
+  --color-info-700: #185aa6;
+  --color-info-800: #1a4b87;
+  --color-info-900: #1a3f70;
+
+  /* ---------------------------------------------------------------------
+     TYPOGRAPHY — Family, scale, weight, line-height, letter-spacing
+     --------------------------------------------------------------------- */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.05rem;
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base: 0.9375rem;
+  --text-base--line-height: 1.5rem;
+  --text-md: 1.0625rem;
+  --text-md--line-height: 1.6rem;
+  --text-lg: 1.1875rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.9rem;
+  --text-2xl: 1.75rem;
+  --text-2xl--line-height: 2.2rem;
+  --text-3xl: 2.125rem;
+  --text-3xl--line-height: 2.5rem;
+  --text-4xl: 2.75rem;
+  --text-4xl--line-height: 3.1rem;
+  --text-5xl: 3.5rem;
+  --text-5xl--line-height: 3.85rem;
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+
+  --tracking-tighter: -0.03em;
+  --tracking-tight: -0.015em;
+  --tracking-normal: -0.005em;
+  --tracking-wide: 0.02em;
+  --tracking-wider: 0.06em;
+
+  --leading-none: 1;
+  --leading-tight: 1.2;
+  --leading-snug: 1.35;
+  --leading-normal: 1.55;
+  --leading-relaxed: 1.75;
+
+  /* ---------------------------------------------------------------------
+     SPACING & SIZING — base unit driving the whole spacing scale
+     --------------------------------------------------------------------- */
+  --spacing: 0.25rem;
+
+  --size-icon-xs: 0.875rem;
+  --size-icon-sm: 1rem;
+  --size-icon-md: 1.25rem;
+  --size-icon-lg: 1.5rem;
+  --size-icon-xl: 2rem;
+
+  --size-control-sm: 2rem;
+  --size-control-md: 2.5rem;
+  --size-control-lg: 3rem;
+
+  --size-avatar-xs: 1.5rem;
+  --size-avatar-sm: 2rem;
+  --size-avatar-md: 2.5rem;
+  --size-avatar-lg: 3.25rem;
+  --size-avatar-xl: 4.5rem;
+
+  --container-3xs: 16rem;
+  --container-2xs: 18rem;
+  --container-xs: 20rem;
+  --container-sm: 24rem;
+  --container-md: 28rem;
+  --container-lg: 32rem;
+  --container-xl: 40rem;
+  --container-2xl: 48rem;
+  --container-3xl: 56rem;
+  --container-content: 72rem;
+
+  /* ---------------------------------------------------------------------
+     RADIUS
+     --------------------------------------------------------------------- */
+  --radius-xs: 0.375rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.375rem;
+  --radius-2xl: 1.75rem;
+  --radius-full: 999px;
+
+  /* ---------------------------------------------------------------------
+     SHADOWS / ELEVATION — soft, diffuse, low-contrast
+     --------------------------------------------------------------------- */
+  --shadow-elevation-0: none;
+  --shadow-elevation-1: 0 1px 2px 0 rgba(32, 34, 48, 0.05);
+  --shadow-elevation-2: 0 2px 8px -2px rgba(32, 34, 48, 0.08), 0 1px 2px -1px rgba(32, 34, 48, 0.04);
+  --shadow-elevation-3: 0 10px 24px -6px rgba(32, 34, 48, 0.12), 0 3px 8px -3px rgba(32, 34, 48, 0.06);
+  --shadow-elevation-4: 0 20px 45px -10px rgba(32, 34, 48, 0.16), 0 6px 14px -6px rgba(32, 34, 48, 0.08);
+  --shadow-elevation-5: 0 32px 70px -16px rgba(32, 34, 48, 0.22), 0 10px 20px -8px rgba(32, 34, 48, 0.1);
+
+  --shadow-xs: var(--shadow-elevation-1);
+  --shadow-sm: var(--shadow-elevation-2);
+  --shadow-md: var(--shadow-elevation-3);
+  --shadow-lg: var(--shadow-elevation-4);
+  --shadow-xl: var(--shadow-elevation-5);
+
+  /* ---------------------------------------------------------------------
+     MOTION / EASING
+     --------------------------------------------------------------------- */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-decelerate: cubic-bezier(0, 0, 0.2, 1);
+  --ease-accelerate: cubic-bezier(0.4, 0, 1, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+
+  --animate-spin-slow: spin 1.4s linear infinite;
+  --animate-fade-in: fade-in 0.2s ease-out;
+  --animate-scale-in: scale-in 0.16s ease-out;
+  --animate-slide-up: slide-up 0.22s ease-out;
+  --animate-slide-down: slide-down 0.22s ease-out;
+  --animate-shimmer: shimmer 1.8s ease-in-out infinite;
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slide-down {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Supplementary tokens without a dedicated Tailwind utility namespace.
+   Consumed directly via var(--token) or arbitrary-value utilities.
+   --------------------------------------------------------------------- */
+:root {
+  --duration-instant: 80ms;
+  --duration-fast: 130ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+  --duration-slower: 480ms;
+
+  --opacity-disabled: 0.45;
+  --opacity-muted: 0.64;
+  --opacity-hover-overlay: 0.06;
+  --opacity-active-overlay: 0.12;
+  --opacity-backdrop: 0.45;
+  --opacity-subtle: 0.08;
+
+  --border-width-hairline: 1px;
+  --border-width-thick: 1.5px;
+  --border-color-default: var(--color-neutral-200);
+  --border-color-strong: var(--color-neutral-300);
+
+  --focus-ring-width: 3px;
+  --focus-ring-offset: 2px;
+  --focus-ring-color: var(--color-primary-400);
+
+  --z-base: 0;
+  --z-sticky: 20;
+  --z-dropdown: 30;
+  --z-overlay: 40;
+  --z-drawer: 50;
+  --z-modal: 60;
+  --z-popover: 70;
+  --z-toast: 80;
+  --z-tooltip: 90;
+
+  --layout-gutter: 1.5rem;
+  --layout-section-gap: 3.5rem;
+}
+
+/* ---------------------------------------------------------------------
+   RTL — switch the UI font stack to Vazirmatn when the document is RTL.
+   Unlayered rule, so it beats the @theme token for html[dir="rtl"].
+   --------------------------------------------------------------------- */
+[dir="rtl"] {
+  --font-sans: var(--font-vazir), var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+}
+
+/* ---------------------------------------------------------------------
+   Base layer
+   --------------------------------------------------------------------- */
+@layer base {
+  * {
+    border-color: var(--color-neutral-200);
+  }
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    background-color: var(--color-neutral-50);
+    color: var(--color-neutral-900);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: var(--leading-normal);
+  }
+  ::selection {
+    background-color: var(--color-primary-200);
+    color: var(--color-primary-900);
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--color-neutral-300);
+    border-radius: var(--radius-full);
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+}
+
+@layer utilities {
+  .bg-shimmer {
+    background-image: linear-gradient(
+      100deg,
+      var(--color-neutral-100) 30%,
+      var(--color-neutral-200) 45%,
+      var(--color-neutral-100) 60%
+    );
+    background-size: 200% 100%;
+    animation: var(--animate-shimmer);
+  }
+}

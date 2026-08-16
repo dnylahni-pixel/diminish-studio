@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ابزار تصمیم‌گیری | Decision Helper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --surface: #ffffff;
+    --surface-2: #f2f4f8;
+    --border: #e4e8f0;
+    --border-strong: #d3dae6;
+    --foreground: #1d2530;
+    --foreground-muted: #67707d;
+    --primary: #5a5bd6;
+    --primary-strong: #4b4cc8;
+    --primary-soft: #edf0fd;
+    --success: #0d9f6e;
+    --success-soft: #e6f7f0;
+    --warning: #b37300;
+    --warning-soft: #fbf3e3;
+    --danger: #cf4441;
+    --danger-soft: #fceeec;
+    --radius: 14px;
+    --shadow: 0 12px 32px -20px rgba(28, 37, 48, 0.22);
+    font-family: 'Vazirmatn', 'Tahoma', sans-serif;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--foreground);
+    min-height: 100vh;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+    text-align: right;
+  }
+  button { font-family: inherit; }
+  textarea, input { font-family: inherit; }
+
+  /* ---------- header ---------- */
+  .app-header {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in oklab, var(--bg) 84%, transparent);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .header-inner {
+    max-width: 720px; margin: 0 auto; padding: 14px 22px;
+    display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: center; gap: 11px; }
+  .brand-icon {
+    width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0;
+    display: grid; place-items: center; font-size: 19px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+    color: #fff; box-shadow: 0 6px 16px -8px rgba(90, 91, 214, 0.55);
+  }
+  .brand h1 { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+  .brand p { font-size: 12px; color: var(--foreground-muted); }
+  .header-actions { display: flex; align-items: center; gap: 10px; }
+  .folder-path {
+    font-size: 11.5px; color: var(--foreground-muted); direction: ltr;
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 5px 12px; border-radius: 999px; max-width: 240px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  /* ---------- buttons ---------- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 9px 18px; border: 1px solid transparent; border-radius: 999px;
+    font-size: 13.5px; font-weight: 600; cursor: pointer; color: var(--foreground);
+    transition: background .16s ease, border-color .16s ease, transform .1s ease, box-shadow .16s ease;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+  .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 6px 18px -10px rgba(90, 91, 214, 0.7); }
+  .btn-primary:not(:disabled):hover { background: var(--primary-strong); }
+  .btn-ghost { background: var(--surface); border-color: var(--border); color: var(--foreground-muted); }
+  .btn-ghost:hover { color: var(--foreground); border-color: var(--border-strong); }
+  .btn-sm { padding: 6px 13px; font-size: 12.5px; }
+  .btn.busy { pointer-events: none; opacity: .7; }
+
+  /* ---------- container / views ---------- */
+  .container { max-width: 720px; margin: 0 auto; padding: 28px 22px 120px; }
+  .view { display: none; }
+  .view.active { display: block; animation: fadeUp .3s ease; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .muted { color: var(--foreground-muted); }
+
+  /* ---------- tabs ---------- */
+  .tabs {
+    display: inline-flex; gap: 3px; padding: 3px; border-radius: 999px;
+    background: var(--surface); border: 1px solid var(--border); margin-bottom: 20px;
+  }
+  .tab {
+    padding: 7px 20px; border: none; border-radius: 999px; font-size: 13.5px; font-weight: 600;
+    cursor: pointer; color: var(--foreground-muted); background: transparent;
+    transition: background .16s ease, color .16s ease;
+  }
+  .tab:hover { color: var(--foreground); }
+  .tab.active { background: var(--primary-soft); color: var(--primary-strong); }
+
+  /* ---------- file list ---------- */
+  .file-list { display: flex; flex-direction: column; gap: 10px; }
+  .file-card {
+    position: relative; display: block; text-align: right; width: 100%;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px 20px; cursor: pointer; color: inherit;
+    transition: border-color .16s ease, transform .16s ease, box-shadow .16s ease;
+  }
+  .file-card:hover { border-color: var(--primary); transform: translateY(-1px); box-shadow: var(--shadow); }
+  .file-card:active { transform: scale(0.996); }
+  .file-card.resolved { opacity: 0.78; }
+  .file-card.resolved:hover { opacity: 1; }
+  .file-card.invalid { cursor: not-allowed; }
+  .file-card.invalid:hover { transform: none; box-shadow: none; border-color: var(--danger); }
+  .fc-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 7px; }
+  .fc-title { font-size: 15.5px; font-weight: 700; margin-bottom: 3px; }
+  .fc-sub { font-size: 12.5px; }
+  .fc-chevron { position: absolute; inset-inline-start: 16px; top: 50%; transform: translateY(-50%); color: var(--foreground-muted); font-size: 20px; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11.5px; font-weight: 700; padding: 3px 11px; border-radius: 999px;
+  }
+  .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .badge.pending { background: var(--warning-soft); color: var(--warning); }
+  .badge.resolved { background: var(--success-soft); color: var(--success); }
+  .badge.invalid { background: var(--danger-soft); color: var(--danger); }
+  .fc-date { font-size: 12px; color: var(--foreground-muted); }
+
+  /* ---------- loading / empty ---------- */
+  .loader { display: flex; align-items: center; gap: 10px; color: var(--foreground-muted); font-size: 14px; padding: 26px 4px; }
+  .dots { display: inline-flex; gap: 5px; }
+  .dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--primary); animation: bounce 1.2s ease infinite; }
+  .dots span:nth-child(2) { animation-delay: .15s; }
+  .dots span:nth-child(3) { animation-delay: .3s; }
+  @keyframes bounce { 0%,100% { transform: translateY(0); opacity: .4; } 50% { transform: translateY(-4px); opacity: 1; } }
+  .empty {
+    text-align: center; padding: 46px 20px; border: 1px dashed var(--border-strong);
+    border-radius: var(--radius); color: var(--foreground-muted);
+  }
+  .empty .big { font-size: 38px; margin-bottom: 10px; }
+  .empty h3 { color: var(--foreground); font-size: 16px; margin-bottom: 6px; }
+  .empty p { font-size: 13.5px; max-width: 470px; margin: 0 auto; }
+  .empty code { background: var(--surface); border: 1px solid var(--border); padding: 2px 8px; border-radius: 8px; font-size: 12px; direction: ltr; display: inline-block; }
+
+  /* ---------- home / bloom ---------- */
+  body.home .app-header { display: none; }
+  .bloom-wrap {
+    position: relative; width: 100%; min-height: 68vh;
+    display: grid; place-items: center;
+  }
+  .bloom-trigger {
+    position: relative; z-index: 2;
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 16px 30px; border: none; border-radius: 999px; cursor: pointer;
+    font-size: 16px; font-weight: 700; color: #fff;
+    background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+    box-shadow: 0 14px 38px -14px rgba(90, 91, 214, 0.65);
+    transition: transform .35s cubic-bezier(.22,1,.36,1), box-shadow .35s ease;
+  }
+  .bloom-trigger:hover { transform: scale(1.04); }
+  .bloom-trigger.open { transform: scale(1.18); box-shadow: 0 22px 60px -18px rgba(90, 91, 214, 0.8); }
+  .bloom-icon { font-size: 21px; }
+  .bloom-menu { position: absolute; inset: 0; pointer-events: none; }
+  .bloom-item {
+    position: absolute; left: 50%; top: 50%; z-index: 3;
+    display: inline-flex; align-items: center; gap: 9px;
+    padding: 11px 20px; border: 1px solid var(--border); border-radius: 999px;
+    background: var(--surface); color: var(--foreground); font-size: 14px; font-weight: 600;
+    cursor: pointer; white-space: nowrap;
+    box-shadow: 0 10px 26px -16px rgba(28, 37, 48, 0.35);
+    opacity: 0; pointer-events: none;
+    transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(.35);
+    transition: transform .38s cubic-bezier(.22,1,.36,1), opacity .3s ease, border-color .15s ease;
+  }
+  .bloom-item:hover { border-color: var(--primary); }
+  .bloom-wrap.open .bloom-item {
+    opacity: 1; pointer-events: auto;
+    transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1);
+    transition-delay: calc(var(--i) * 70ms);
+  }
+  @media (max-width: 560px) {
+    .bloom-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; min-height: 72vh; }
+    .bloom-menu { position: static; display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+    .bloom-item { position: static; transform: none; transition-delay: 0ms; }
+    .bloom-trigger { margin-bottom: 10px; }
+    .bloom-trigger.open { transform: scale(1.12); }
+  }
+
+  /* ---------- brain dump ---------- */
+  .brain-list { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+  .brain-item {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+    padding: 12px 14px; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 11px;
+  }
+  .brain-item-body { flex: 1; min-width: 0; }
+  .brain-item-text { font-size: 14px; white-space: pre-wrap; word-break: break-word; }
+  .brain-item-meta { font-size: 11px; color: var(--foreground-muted); margin-top: 3px; }
+  .brain-delete {
+    border: none; background: transparent; color: var(--foreground-muted); cursor: pointer;
+    font-size: 15px; padding: 4px 8px; border-radius: 8px;
+    transition: background .15s ease, color .15s ease;
+  }
+  .brain-delete:hover { background: var(--danger-soft); color: var(--danger); }
+
+  /* ---------- answer view ---------- */
+  .back { margin-bottom: 16px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 20px 22px; margin-bottom: 16px;
+  }
+  #view-answer > .head, #view-resolved > .head {
+    background: transparent; border: 0; box-shadow: none; padding: 0;
+  }
+  .head h2 { font-size: 19px; font-weight: 700; margin-bottom: 4px; }
+  .head .context { color: var(--foreground-muted); font-size: 13.5px; margin-bottom: 14px; }
+  .progress-wrap { margin-top: 2px; }
+  .progress-bar { height: 5px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+  .progress-fill {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, var(--primary), #8f8ff2);
+    border-radius: 3px; transition: width .4s cubic-bezier(.22,1,.36,1);
+  }
+  .progress-text { text-align: center; font-size: 12.5px; color: var(--foreground-muted); margin-top: 9px; font-weight: 500; }
+
+  .q-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 18px 20px; margin-bottom: 12px; transition: border-color .2s ease;
+  }
+  .q-card.answered { border-color: color-mix(in oklab, var(--success) 40%, var(--border)); }
+  .q-card.has-error { border-color: var(--danger); box-shadow: 0 0 0 3px var(--danger-soft); }
+  .q-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+  .q-num {
+    background: var(--primary-soft); color: var(--primary-strong); width: 28px; height: 28px;
+    border-radius: 8px; display: grid; place-items: center; font-weight: 700; font-size: 13px;
+  }
+  .q-status { font-size: 11.5px; font-weight: 700; color: var(--foreground-muted); background: var(--surface-2); padding: 3px 11px; border-radius: 999px; }
+  .q-card.answered .q-status { background: var(--success-soft); color: var(--success); }
+  .q-text { font-size: 15.5px; font-weight: 600; margin-bottom: 4px; text-align: right; }
+  .req-dot { color: var(--danger); }
+  .q-note { font-size: 12.5px; color: var(--foreground-muted); margin-bottom: 13px; }
+
+  .opt-list { display: flex; flex-direction: column; gap: 8px; }
+  .opt-item {
+    display: flex; align-items: center; gap: 11px; width: 100%; text-align: right;
+    padding: 11px 15px; border: 1px solid var(--border); border-radius: 11px; cursor: pointer;
+    background: var(--surface-2); font-size: 14px; color: var(--foreground);
+    transition: border-color .15s ease, background .15s ease, transform .1s ease;
+  }
+  .opt-item:hover { border-color: var(--primary); }
+  .opt-item:active { transform: scale(0.99); }
+  .opt-item.selected { border-color: var(--primary); background: var(--primary-soft); }
+  .opt-radio {
+    width: 18px; height: 18px; border: 2px solid var(--border-strong); border-radius: 50%;
+    display: grid; place-items: center; flex-shrink: 0; transition: all .15s ease;
+  }
+  .opt-check {
+    width: 18px; height: 18px; border: 2px solid var(--border-strong); border-radius: 5px;
+    display: grid; place-items: center; flex-shrink: 0; font-size: 11px; font-weight: 800; transition: all .15s ease;
+  }
+  .opt-item.selected .opt-radio { border-color: var(--primary); }
+  .opt-item.selected .opt-radio::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--primary); }
+  .opt-item.selected .opt-check { border-color: var(--primary); background: var(--primary); color: #fff; }
+  .opt-item.selected .opt-check::after { content: '✓'; }
+
+  .field-label { display: block; font-size: 12.5px; color: var(--foreground-muted); margin-bottom: 7px; font-weight: 500; }
+  textarea, input[type="number"], .output-box {
+    width: 100%; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 11px; padding: 11px 14px; color: var(--foreground);
+    font-size: 14px; resize: vertical; transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  textarea:focus, input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+  textarea { min-height: 88px; }
+  input[type="number"] { text-align: right; }
+  .explain-field { margin-top: 12px; border-top: 1px dashed var(--border); padding-top: 12px; }
+  .explain-field textarea { min-height: 60px; font-size: 13px; }
+
+  .actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+
+  /* ---------- resolved view ---------- */
+  .banner {
+    display: flex; align-items: flex-start; gap: 10px; padding: 12px 16px; border-radius: 12px;
+    font-size: 13.5px; margin-bottom: 16px; font-weight: 500;
+  }
+  .banner.success { background: var(--success-soft); color: var(--success); border: 1px solid color-mix(in oklab, var(--success) 35%, transparent); }
+  .banner.info { background: var(--primary-soft); color: var(--primary-strong); border: 1px solid color-mix(in oklab, var(--primary) 35%, transparent); }
+  .result-item {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 15px 18px; margin-bottom: 11px;
+  }
+  .rq-q { display: flex; align-items: center; gap: 8px; font-weight: 600; margin-bottom: 8px; font-size: 14px; text-align: right; }
+  .rq-num {
+    background: var(--primary-soft); color: var(--primary-strong); width: 23px; height: 23px;
+    border-radius: 7px; flex-shrink: 0; display: grid; place-items: center; font-size: 12px; font-weight: 700;
+  }
+  .rq-a {
+    font-size: 14px; padding: 9px 13px; background: var(--surface-2);
+    border-radius: 10px; border-inline-start: 3px solid var(--primary); white-space: pre-wrap; text-align: right;
+  }
+  .rq-a.empty { color: var(--foreground-muted); border-inline-start-color: var(--border-strong); }
+  .rq-explain {
+    font-size: 13px; color: var(--foreground-muted); margin-top: 9px; padding: 8px 13px;
+    background: var(--primary-soft); border-radius: 10px; text-align: right;
+  }
+  .output-label { font-size: 13.5px; font-weight: 700; margin: 4px 0 10px; display: flex; align-items: center; gap: 8px; }
+  .output-box {
+    font-family: 'Fira Code', 'Courier New', monospace; font-size: 12px; direction: ltr; text-align: left;
+    max-height: 300px; overflow: auto; white-space: pre; color: var(--foreground-muted); background: var(--surface-2);
+  }
+
+  /* ---------- toast ---------- */
+  .toast {
+    position: fixed; bottom: 22px; inset-inline-start: 50%; transform: translate(-50%, 16px);
+    background: var(--surface); color: var(--foreground); border: 1px solid var(--border-strong);
+    padding: 11px 20px; border-radius: 12px; font-size: 13.5px; font-weight: 600;
+    box-shadow: 0 14px 40px -18px rgba(28, 37, 48, 0.35); opacity: 0; pointer-events: none;
+    transition: opacity .22s ease, transform .22s ease; z-index: 60; max-width: min(92vw, 520px); text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .toast.danger { border-color: color-mix(in oklab, var(--danger) 45%, transparent); color: var(--danger); }
+  .toast.success { border-color: color-mix(in oklab, var(--success) 45%, transparent); color: var(--success); }
+
+  /* ---------- scrollbar ---------- */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 5px; border: 3px solid var(--bg); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--foreground-muted); }
+
+  /* ---------- reduced motion ---------- */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+
+  @media (max-width: 560px) {
+    .brand p { display: none; }
+    .folder-path { display: none; }
+    .actions .btn { flex: 1; }
+  }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+    <div class="header-inner">
+      <div class="brand">
+        <span class="brand-icon">🎯</span>
+        <div>
+          <h1>ابزار تصمیم‌گیری</h1>
+          <p>Decision Helper — تصمیم‌ها را از روی فایل‌های JSON پاسخ بده</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-ghost btn-sm" id="homeBtn" title="خانه">🏠</button>
+        <span class="folder-path" id="folderPath" title="پوشه‌ی تصمیم‌ها">…</span>
+        <button class="btn btn-ghost btn-sm" id="refreshBtn" title="بارگذاری مجدد">⟳</button>
+      </div>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- ============ HOME / BLOOM ============ -->
+  <section id="view-home" class="view active">
+    <div class="bloom-wrap" id="bloomWrap">
+      <button class="bloom-trigger" id="bloomTrigger" aria-expanded="false" aria-haspopup="menu">
+        <span class="bloom-icon">🎯</span>
+        <span>شروع کن</span>
+      </button>
+      <div class="bloom-menu" id="bloomMenu" role="menu">
+        <button class="bloom-item" data-space="brain" style="--i:0; --tx:-38%; --ty:-34%"><span>🧠</span>جعبه‌ی ذهن</button>
+        <button class="bloom-item" data-space="pending" style="--i:1; --tx:38%; --ty:-34%"><span>⏳</span>در انتظار</button>
+        <button class="bloom-item" data-space="resolved" style="--i:2; --tx:-38%; --ty:34%"><span>✅</span>حل‌شده</button>
+        <button class="bloom-item" data-space="all" style="--i:3; --tx:38%; --ty:34%"><span>🗂</span>همه</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ LIST / FILE PICKER ============ -->
+  <section id="view-list" class="view">
+    <button class="btn btn-ghost btn-sm back" onclick="goHome()">→ بازگشت به خانه</button>
+    <div class="tabs" id="tabs">
+      <button class="tab" data-view="brain">🧠 جعبه‌ی ذهن</button>
+      <button class="tab active" data-filter="all">همه</button>
+      <button class="tab" data-filter="pending">در انتظار</button>
+      <button class="tab" data-filter="resolved">حل‌شده</button>
+    </div>
+    <div id="listArea"></div>
+  </section>
+
+  <!-- ============ BRAIN DUMP ============ -->
+  <section id="view-brain" class="view">
+    <button class="btn btn-ghost btn-sm back" onclick="goHome()">→ بازگشت به خانه</button>
+    <div class="card head">
+      <h2>🧠 جعبه‌ی ذهن</h2>
+      <p class="context">هر چیزی که در ذهنت است را اینجا بریز؛ Enter بزن تا توی جعبه بیفتد. بعداً خودت مرتبش می‌کنی.</p>
+    </div>
+    <div class="card">
+      <input id="brainInput" type="text" placeholder="تایپ کن و Enter بزن…" autocomplete="off">
+      <div id="brainList" class="brain-list"></div>
+    </div>
+  </section>
+
+  <!-- ============ ANSWER ============ -->
+  <section id="view-answer" class="view">
+    <button class="btn btn-ghost btn-sm back" onclick="goList()">→ بازگشت به فهرست</button>
+    <div class="card head">
+      <h2 id="ansTitle"></h2>
+      <p class="context" id="ansContext"></p>
+      <div class="progress-wrap">
+        <div class="progress-bar"><div class="progress-fill" id="progFill"></div></div>
+        <div class="progress-text" id="progText"></div>
+      </div>
+    </div>
+    <div id="questionsBox"></div>
+    <div class="actions">
+      <button class="btn btn-primary" id="resolveBtn" disabled>حل کن و ذخیره</button>
+      <button class="btn btn-ghost" onclick="goList()">لغو</button>
+    </div>
+  </section>
+
+  <!-- ============ RESOLVED ============ -->
+  <section id="view-resolved" class="view">
+    <button class="btn btn-ghost btn-sm back" onclick="goList()">→ بازگشت به فهرست</button>
+    <div id="resolvedBox"></div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+
+const $ = (sel) => document.querySelector(sel);
+
+const state = {
+  view: 'list',
+  files: [],
+  filter: 'all',
+  inboxDir: '',
+  current: null, // { file, name }
+  answers: {},        // questionId -> value
+  explanations: {},   // questionId -> string
+  justResolved: false,
+  brain: [],
+};
+
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+}[c]));
+
+const localAnswered = (q, answers) => {
+  const a = answers[q.id];
+  if (a === undefined || a === null) return false;
+  if (typeof a === 'string') return a.trim() !== '';
+  if (Array.isArray(a)) return a.length > 0;
+  if (typeof a === 'number') return Number.isFinite(a);
+  return true;
+};
+
+/* ---------- api ---------- */
+async function api(path, opts) {
+  const res = await fetch(path, opts);
+  let data = null;
+  try { data = await res.json(); } catch { /* ignore */ }
+  if (!res.ok) {
+    const err = new Error(data?.error || (data?.fieldErrors ? 'چند پاسخ نامعتبر است' : 'خطای سرور'));
+    err.status = res.status;
+    err.fieldErrors = data?.fieldErrors || null;
+    throw err;
+  }
+  return data;
+}
+
+/* ---------- views ---------- */
+function show(view) {
+  state.view = view;
+  document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
+  $('#view-' + view).classList.add('active');
+  document.body.classList.toggle('home', view === 'home');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function goList() {
+  show('list');
+  loadFiles();
+}
+
+/* ---------- toast ---------- */
+let toastTimer;
+function showToast(msg, kind = 'success') {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + kind;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3400);
+}
+
+/* ---------- file list ---------- */
+function formatDate(iso) {
+  if (!iso) return '';
+  try {
+    return new Date(iso).toLocaleString('fa-IR', { dateStyle: 'medium', timeStyle: 'short' });
+  } catch { return iso; }
+}
+
+function statusBadge(f) {
+  if (f.invalid) return '<span class="badge invalid">نامعتبر</span>';
+  if (f.status === 'resolved') return '<span class="badge resolved">حل‌شده</span>';
+  return '<span class="badge pending">در انتظار</span>';
+}
+
+function renderList() {
+  $('#folderPath').textContent = state.inboxDir ? state.inboxDir.split('/').pop() : '';
+  const area = $('#listArea');
+  const list = state.files.filter((f) => state.filter === 'all' || f.status === state.filter);
+
+  if (!list.length) {
+    const nothingAtAll = state.files.length === 0;
+    area.innerHTML = `
+      <div class="empty">
+        <div class="big">${nothingAtAll ? '📭' : '🔍'}</div>
+        <h3>${nothingAtAll ? 'هیچ فایلی در پوشه نیست' : 'فایلی با این فیلتر نیست'}</h3>
+        <p>${nothingAtAll
+          ? 'مدل هنوز تصمیمی ننوشته. از Claude بخواه از skill «تصمیم‌گیری» استفاده کند، یا یک فایل <code>pending-&lt;id&gt;.json</code> در پوشه بسازد.'
+          : 'فیلتر را عوض کن.'}</p>
+      </div>`;
+    return;
+  }
+
+  area.innerHTML = list.map((f) => `
+    <button class="file-card ${f.status} ${f.invalid ? 'invalid' : ''}" data-id="${esc(f.id)}">
+      <div class="fc-top">
+        ${statusBadge(f)}
+        <span class="fc-date">${f.invalid ? esc(f.name) : formatDate(f.createdAt)}</span>
+      </div>
+      <div class="fc-title">${f.invalid ? esc(f.name) : esc(f.title)}</div>
+      <div class="fc-sub muted">
+        ${f.invalid
+          ? '⚠️ ' + esc(f.error || 'فایل نامعتبر')
+          : `${f.questionCount} سوال • ${f.answeredCount} پاسخ`}
+      </div>
+      <span class="fc-chevron">‹</span>
+    </button>`).join('');
+
+  area.querySelectorAll('.file-card').forEach((card) => {
+    card.addEventListener('click', () => {
+      const id = card.dataset.id;
+      if (card.classList.contains('invalid')) {
+        showToast('این فایل JSON نامعتبر است و باز نمی‌شود', 'danger');
+        return;
+      }
+      openFile(id);
+    });
+  });
+}
+
+async function loadFiles() {
+  const area = $('#listArea');
+  const prev = area.innerHTML;
+  area.innerHTML = `<div class="loader"><span class="dots"><span></span><span></span><span></span></span> در حال بارگذاری…</div>`;
+  try {
+    const data = await api('/api/files');
+    state.files = data.files || [];
+    state.inboxDir = data.inboxDir || '';
+    renderList();
+  } catch (e) {
+    area.innerHTML = prev || `<div class="empty"><div class="big">⚠️</div><h3>اتصال به سرور ممکن نشد</h3><p>مطمئن شو سرور Decision Helper در حال اجراست: <code>pnpm decisions</code></p></div>`;
+    showToast(e.message || 'خطا در بارگذاری', 'danger');
+  }
+}
+
+/* ---------- open / answer ---------- */
+async function openFile(id) {
+  try {
+    const { file, name } = await api('/api/files/' + encodeURIComponent(id));
+    state.current = { file, name };
+    state.answers = {};
+    state.explanations = {};
+    state.justResolved = false;
+    if (file.status === 'resolved') renderResolved(file, false);
+    else renderAnswer(file);
+  } catch (e) {
+    showToast(e.message || 'باز کردن فایل ممکن نشد', 'danger');
+  }
+}
+
+function answerInputHtml(q) {
+  if (q.type === 'text') {
+    return `<label class="field-label">پاسخ</label><textarea class="ta" placeholder="پاسخ خود را بنویس…"></textarea>`;
+  }
+  if (q.type === 'number') {
+    return `<label class="field-label">پاسخ عددی</label><input type="number" class="num" lang="en">`;
+  }
+  return `<div class="opt-list">
+    ${(q.options || []).map((opt) => `
+      <button type="button" class="opt-item" data-value="${esc(opt)}">
+        <span class="${q.type === 'multi-choice' ? 'opt-check' : 'opt-radio'}"></span>
+        <span class="opt-text">${esc(opt)}</span>
+      </button>`).join('')}
+  </div>`;
+}
+
+function renderAnswer(file) {
+  $('#ansTitle').textContent = file.title || file.id;
+  $('#ansContext').textContent = file.context || '';
+  const box = $('#questionsBox');
+
+  box.innerHTML = file.questions.map((q, i) => `
+    <div class="q-card" data-qid="${esc(q.id)}">
+      <div class="q-head">
+        <span class="q-num">${i + 1}</span>
+        <span class="q-status">${q.required ? 'الزامی' : 'اختیاری'}</span>
+      </div>
+      <div class="q-text">${esc(q.question)}${q.required ? ' <span class="req-dot">*</span>' : ''}</div>
+      ${q.note ? `<p class="q-note">${esc(q.note)}</p>` : ''}
+      ${answerInputHtml(q)}
+      <div class="explain-field">
+        <label class="field-label">توضیح درباره‌ی پاسخ (اختیاری)</label>
+        <textarea class="ta-explain" placeholder="دلیل یا نکته‌ای بنویس…"></textarea>
+      </div>
+    </div>`).join('');
+
+  show('answer');
+  updateProgress(file);
+  updateResolveBtn(file);
+}
+
+$('#questionsBox').addEventListener('click', (e) => {
+  const opt = e.target.closest('.opt-item');
+  if (!opt) return;
+  const card = opt.closest('.q-card');
+  const qid = card.dataset.qid;
+  const file = state.current?.file;
+  const q = file?.questions.find((x) => x.id === qid);
+  if (!q) return;
+  const val = opt.dataset.value;
+
+  if (q.type === 'multi-choice') {
+    let arr = Array.isArray(state.answers[qid]) ? state.answers[qid] : [];
+    arr = arr.includes(val) ? arr.filter((v) => v !== val) : [...arr, val];
+    state.answers[qid] = arr;
+    card.querySelectorAll('.opt-item').forEach((el) =>
+      el.classList.toggle('selected', arr.includes(el.dataset.value)));
+  } else {
+    state.answers[qid] = val;
+    card.querySelectorAll('.opt-item').forEach((el) =>
+      el.classList.toggle('selected', el.dataset.value === val));
+  }
+  onAnswerChange(file, qid, card);
+});
+
+$('#questionsBox').addEventListener('input', (e) => {
+  const card = e.target.closest('.q-card');
+  if (!card) return;
+  const qid = card.dataset.qid;
+  const file = state.current?.file;
+  const q = file?.questions.find((x) => x.id === qid);
+  if (!q) return;
+  if (e.target.classList.contains('ta')) state.answers[qid] = e.target.value;
+  else if (e.target.classList.contains('num')) state.answers[qid] = e.target.value === '' ? null : Number(e.target.value);
+  else if (e.target.classList.contains('ta-explain')) state.explanations[qid] = e.target.value;
+  if (!e.target.classList.contains('ta-explain')) onAnswerChange(file, qid, card);
+});
+
+function onAnswerChange(file, qid, card) {
+  const q = file.questions.find((x) => x.id === qid);
+  const answered = localAnswered(q, state.answers);
+  card.classList.toggle('answered', answered);
+  const st = card.querySelector('.q-status');
+  if (st) st.textContent = answered ? '✓ پاسخ داده شد' : (q.required ? 'الزامی' : 'اختیاری');
+  card.classList.remove('has-error');
+  updateProgress(file);
+  updateResolveBtn(file);
+}
+
+function updateProgress(file) {
+  const total = file.questions.length;
+  const answered = file.questions.filter((q) => localAnswered(q, state.answers)).length;
+  const pct = total ? Math.round((answered / total) * 100) : 0;
+  $('#progFill').style.width = pct + '%';
+  $('#progText').textContent = `${answered} از ${total} سوال پاسخ داده شده`;
+}
+
+function allRequiredAnswered(file) {
+  return file.questions.every((q) => !q.required || localAnswered(q, state.answers));
+}
+function updateResolveBtn(file) {
+  $('#resolveBtn').disabled = !allRequiredAnswered(file);
+}
+
+async function submitResolve() {
+  const file = state.current?.file;
+  if (!file) return;
+  const btn = $('#resolveBtn');
+  btn.disabled = true;
+  btn.classList.add('busy');
+  btn.textContent = 'در حال ذخیره…';
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 15000);
+  try {
+    const data = await api('/api/files/' + encodeURIComponent(file.id) + '/resolve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ answers: state.answers, explanations: state.explanations }),
+      signal: ctrl.signal,
+    });
+    state.justResolved = true;
+    renderResolved(data.file, true);
+    showToast('فایل حل شد و در پوشه ذخیره شد ✓');
+  } catch (e) {
+    if (e.name === 'AbortError') {
+      showToast('سرور پاسخ نداد؛ دوباره تلاش کن', 'danger');
+    } else if (e.fieldErrors) {
+      for (const qid of Object.keys(e.fieldErrors)) {
+        const card = document.querySelector(`.q-card[data-qid="${esc(qid)}"]`);
+        card?.classList.add('has-error');
+      }
+      showToast('چند پاسخ نامعتبر است — موارد قرمز را بررسی کن', 'danger');
+    } else {
+      showToast(e.message || 'ذخیره ممکن نشد', 'danger');
+    }
+  } finally {
+    clearTimeout(timer);
+    btn.textContent = 'حل کن و ذخیره';
+    btn.classList.remove('busy');
+    btn.disabled = !allRequiredAnswered(file);
+  }
+}
+$('#resolveBtn').addEventListener('click', submitResolve);
+
+/* ---------- resolved view ---------- */
+function answerLabel(q) {
+  const a = q.answer;
+  if (a === null || a === undefined) return '';
+  if (Array.isArray(a)) return a.join('، ');
+  return String(a);
+}
+
+function renderResolved(file, justResolved) {
+  const box = $('#resolvedBox');
+  const stamp = state.current?.name ? state.current.name : `resolved-${file.id}.json`;
+  const answeredCount = file.questions.filter((q) => !(q.answer === null || q.answer === undefined || (Array.isArray(q.answer) && q.answer.length === 0))).length;
+
+  box.innerHTML = `
+    <div class="banner ${justResolved ? 'success' : 'info'}">
+      ${justResolved
+        ? '✓ تصمیم حل شد و فایلِ پاسخ‌دار ذخیره شد — مدل می‌تواند جواب‌ها را از همان پوشه بخواند.'
+        : 'این تصمیم قبلاً حل شده است — نمایش فقط‌خواندنی.'}
+    </div>
+
+    <div class="card head">
+      <h2>${esc(file.title || file.id)}</h2>
+      <p class="context">${esc(file.context || '')}</p>
+      <div class="progress-text" style="margin-top:0">${answeredCount} از ${file.questions.length} سوال پاسخ داده شده</div>
+    </div>
+
+    <div class="result-item">
+      ${file.questions.map((q, i) => `
+        <div class="rq-q"><span class="rq-num">${i + 1}</span>${esc(q.question)}</div>
+        <div class="rq-a ${answerLabel(q) ? '' : 'empty'}">${answerLabel(q) || '— بدون پاسخ —'}</div>
+        ${q.explanation ? `<div class="rq-explain">💬 ${esc(q.explanation)}</div>` : ''}`).join('')}
+    </div>
+
+    <div class="card">
+      <div class="output-label">📄 فایل ذخیره‌شده: <span class="muted" dir="ltr">${esc(stamp)}</span></div>
+      <div class="output-box" id="outputJson">${esc(JSON.stringify(file, null, 2))}</div>
+      <div class="actions">
+        <button class="btn btn-primary" id="copyBtn">کپی JSON</button>
+        <button class="btn btn-ghost" id="downloadBtn">دانلود فایل JSON</button>
+        <button class="btn btn-ghost" onclick="goList()">بازگشت به فهرست</button>
+      </div>
+    </div>`;
+
+  $('#copyBtn').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(file, null, 2));
+      showToast('JSON کپی شد');
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = JSON.stringify(file, null, 2);
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+      showToast('JSON کپی شد');
+    }
+  });
+  $('#downloadBtn').addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify(file, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `resolved-${file.id}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  show('resolved');
+}
+
+/* ---------- brain dump ---------- */
+async function loadBrain() {
+  const listEl = $('#brainList');
+  try {
+    const data = await api('/api/brain-dump');
+    state.brain = data.items || [];
+    renderBrain();
+  } catch (e) {
+    listEl.innerHTML = `<div class="empty"><div class="big">⚠️</div><h3>جعبه‌ی ذهن در دسترس نیست</h3><p>مطمئن شو سرور Decision Helper در حال اجراست: <code>pnpm decisions</code></p></div>`;
+    showToast(e.message || 'خطا در بارگذاری جعبه‌ی ذهن', 'danger');
+  }
+}
+
+function renderBrain() {
+  const listEl = $('#brainList');
+  if (!state.brain.length) {
+    listEl.innerHTML = `<div class="empty"><div class="big">🧠</div><h3>جعبه خالی است</h3><p>هر فکر، گره یا تصمیمِ معلقی که به ذهنت رسید را همین‌جا بنویس.</p></div>`;
+    return;
+  }
+  listEl.innerHTML = state.brain.map((item) => `
+    <div class="brain-item" data-id="${esc(item.id)}">
+      <div class="brain-item-body">
+        <div class="brain-item-text">${esc(item.text)}</div>
+        <div class="brain-item-meta">${formatDate(item.createdAt)}</div>
+      </div>
+      <button class="brain-delete" title="حذف">🗑</button>
+    </div>`).join('');
+}
+
+async function addBrainItem(text) {
+  try {
+    const data = await api('/api/brain-dump/items', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+    state.brain.unshift(data.item);
+    renderBrain();
+  } catch (e) {
+    showToast(e.message || 'ثبت در جعبه‌ی ذهن ممکن نشد', 'danger');
+  }
+}
+
+async function deleteBrainItem(id) {
+  try {
+    await api('/api/brain-dump/items/' + encodeURIComponent(id), { method: 'DELETE' });
+    state.brain = state.brain.filter((it) => it.id !== id);
+    renderBrain();
+  } catch (e) {
+    showToast(e.message || 'حذف ممکن نشد', 'danger');
+  }
+}
+
+$('#brainInput').addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  const input = $('#brainInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  addBrainItem(text);
+});
+
+$('#brainList').addEventListener('click', (e) => {
+  const btn = e.target.closest('.brain-delete');
+  if (!btn) return;
+  deleteBrainItem(btn.closest('.brain-item').dataset.id);
+});
+
+/* ---------- home / bloom ---------- */
+function closeBloom() {
+  $('#bloomWrap')?.classList.remove('open');
+  const trigger = $('#bloomTrigger');
+  if (trigger) {
+    trigger.classList.remove('open');
+    trigger.setAttribute('aria-expanded', 'false');
+  }
+}
+
+function goHome() {
+  closeBloom();
+  show('home');
+}
+
+function openSpace(space) {
+  closeBloom();
+  if (space === 'brain') {
+    show('brain');
+    loadBrain();
+    return;
+  }
+  show('list');
+  const tab = document.querySelector(`.tab[data-filter="${space}"]`);
+  document.querySelectorAll('.tab').forEach((t) => t.classList.remove('active'));
+  if (tab) tab.classList.add('active');
+  state.filter = space;
+  renderList();
+}
+
+$('#bloomTrigger').addEventListener('click', (e) => {
+  e.stopPropagation();
+  const open = $('#bloomWrap').classList.toggle('open');
+  e.currentTarget.classList.toggle('open', open);
+  e.currentTarget.setAttribute('aria-expanded', String(open));
+});
+
+document.addEventListener('click', (e) => {
+  if (state.view === 'home' && !e.target.closest('#bloomWrap')) closeBloom();
+});
+
+$('#bloomMenu').addEventListener('click', (e) => {
+  const item = e.target.closest('.bloom-item');
+  if (item) openSpace(item.dataset.space);
+});
+
+$('#homeBtn').addEventListener('click', goHome);
+
+/* ---------- tabs & refresh ---------- */
+$('#tabs').addEventListener('click', (e) => {
+  const tab = e.target.closest('.tab');
+  if (!tab) return;
+  document.querySelectorAll('.tab').forEach((t) => t.classList.remove('active'));
+  tab.classList.add('active');
+  if (tab.dataset.view === 'brain') {
+    show('brain');
+    loadBrain();
+    return;
+  }
+  show('list');
+  state.filter = tab.dataset.filter;
+  renderList();
+});
+$('#refreshBtn').addEventListener('click', loadFiles);
+window.addEventListener('focus', () => {
+  if (state.view === 'list') loadFiles();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if (state.view === 'home') {
+    closeBloom();
+  } else if (state.view === 'brain') {
+    goHome();
+  } else if (state.view === 'answer' || state.view === 'resolved') {
+    goList();
+  }
+});
+
+/* ---------- boot ---------- */
+show('home');
+loadFiles();
+</script>
+</body>
+</html>

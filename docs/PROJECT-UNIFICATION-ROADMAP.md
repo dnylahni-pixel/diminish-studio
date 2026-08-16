@@ -14,10 +14,10 @@
 
 در نتیجه، اکنون چند منبع حقیقت هم‌زمان وجود دارد:
 
-1. routeهای واقعی Express در `artifacts/api-server`
-2. قرارداد OpenAPI در `lib/api-spec`
-3. client جنریت‌شده React Query در `lib/api-client-react`
-4. validation/typeهای جنریت‌شده در `lib/api-zod`
+1. routeهای واقعی Express در `apps/api-server`
+2. قرارداد OpenAPI در `packages/api-spec`
+3. client جنریت‌شده React Query در `packages/api-client-react`
+4. validation/typeهای جنریت‌شده در `packages/api-zod`
 5. درخواست‌های مستقیم `customFetch` در بعضی pageها
 6. URL پیش‌فرض hard-coded مربوط به Render در client
 7. تنظیمات dashboardهای Vercel و Render که داخل repository ثبت نشده‌اند
@@ -66,12 +66,12 @@
 ### Monorepo حفظ می‌شود
 
 ```text
-artifacts/diminish-studio   Web application: React + Vite
-artifacts/api-server        HTTP API: Express
-lib/api-spec                قرارداد HTTP و منبع code generation
-lib/api-client-react        client و hookهای Frontend
-lib/api-zod                 schema و typeهای قرارداد Backend
-lib/db                      schema، migration و DB access
+apps/diminish-studio   Web application: React + Vite
+apps/api-server        HTTP API: Express
+packages/api-spec                قرارداد HTTP و منبع code generation
+packages/api-client-react        client و hookهای Frontend
+packages/api-zod                 schema و typeهای قرارداد Backend
+packages/db                      schema، migration و DB access
 scripts                     فرمان‌های development و automation
 docs                        معماری، عملیات و تصمیم‌ها
 ```
@@ -144,8 +144,8 @@ pageها نباید مستقیماً endpoint جدید را با `customFetch` �
 
 خطاهای typecheck موجود:
 
-- `artifacts/api-server/src/routes/chords.ts`
-- `artifacts/api-server/src/routes/songs.ts`
+- `apps/api-server/src/routes/chords.ts`
+- `apps/api-server/src/routes/songs.ts`
 - علت: تمام code pathها مقدار برنمی‌گردانند.
 
 ### توسعه لوکال
@@ -378,7 +378,7 @@ GitHub push
 | Framework Preset | Vite یا Other |
 | Install Command | `corepack enable && pnpm install --frozen-lockfile` |
 | Build Command | `pnpm --filter @workspace/diminish-studio build` |
-| Output Directory | `artifacts/diminish-studio/dist/public` |
+| Output Directory | `apps/diminish-studio/dist/public` |
 | Node.js | 22 |
 | Auto Deploy | روشن |
 
@@ -414,7 +414,7 @@ RUNPOD_API_KEY
 فایل فعلی:
 
 ```text
-artifacts/diminish-studio/vercel.json
+apps/diminish-studio/vercel.json
 ```
 
 فقط rewrite مربوط به SPA دارد. چون Root Directory هدف repository root است، config deployment باید در Phase 5 به root منتقل یا با تنظیم Root Directory هماهنگ شود. این ambiguity باید حذف شود.
@@ -499,12 +499,12 @@ Render نباید هنگام start migration اجرا کند.
 
 ### نگه داشته می‌شوند
 
-- `artifacts/diminish-studio`
-- `artifacts/api-server`
-- `lib/api-spec`
-- `lib/api-client-react`
-- `lib/api-zod`
-- `lib/db`
+- `apps/diminish-studio`
+- `apps/api-server`
+- `packages/api-spec`
+- `packages/api-client-react`
+- `packages/api-zod`
+- `packages/db`
 - `customFetch`
 - pnpm workspace
 
@@ -527,7 +527,7 @@ Render نباید هنگام start migration اجرا کند.
 - Replit Dev Banner
 - Replit runtime error overlay، در صورت داشتن جایگزین
 - alias قدیمی `attached_assets` در صورت عدم مصرف
-- `artifacts/mockup-sandbox` اگر فقط artifact طراحی و بلااستفاده باشد
+- `apps/mockup-sandbox` اگر فقط artifact طراحی و بلااستفاده باشد
 - endpointهای processing قدیمی اگر Analyze جایگزین قطعی آن‌هاست
 - register/login قدیمی بعد از تثبیت Clerk-only flow
 - repository helper deprecated در Upload

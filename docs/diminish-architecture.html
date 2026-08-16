@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diminish Studio — Monorepo Architecture</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Architecture · Diagram Design</p>
+    <h1>Diminish Studio — Monorepo Architecture</h1>
+
+    <svg viewBox="0 0 992 664" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="diminish-architecture-title diminish-architecture-desc">
+      <title id="diminish-architecture-title">Diminish Studio — Monorepo Architecture</title>
+      <desc id="diminish-architecture-desc">Architecture of the Diminish Studio pnpm monorepo: three client apps (diminish-studio web PWA, admin-new, legacy admin) in the left zone, the API server, shared packages and Postgres in the center zone, and external services (Clerk, Backblaze B2, optional RunPod) in the right zone.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+
+      <!-- ══════════════ ZONES ══════════════ -->
+      <rect x="32" y="64" width="288" height="536" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <rect x="140" y="68" width="72" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="176" y="76" fill="rgba(45,49,66,0.40)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">CLIENT APPS</text>
+
+      <rect x="368" y="64" width="288" height="536" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <rect x="478" y="68" width="68" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="512" y="76" fill="rgba(45,49,66,0.40)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">API &amp; DATA</text>
+
+      <rect x="704" y="64" width="248" height="536" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <rect x="792" y="68" width="72" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="828" y="76" fill="rgba(45,49,66,0.40)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">EXTERNAL</text>
+
+      <!-- ══════════════ ARROWS ══════════════ -->
+      <!-- F1 diminish-studio → api-server (REST) -->
+      <path d="M 288,152 H 400" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- F2 api-server → B2 (S3 PUT) -->
+      <path d="M 624,136 H 736" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- F3 admin-new → Postgres (direct drizzle) -->
+      <path d="M 288,336 H 400" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- F5 diminish-studio → Clerk (auth) -->
+      <path d="M 240,208 V 232 Q 240,240 248,240 H 636 Q 644,240 644,248 V 304 Q 644,312 636,312 H 736" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- F6 api-server → RunPod (optional, async analysis) -->
+      <path d="M 624,196 H 700 Q 708,196 708,204 V 512 Q 708,520 700,520 H 736" fill="none" stroke="#7a8399" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+      <!-- F7 api-server → Postgres (drizzle) -->
+      <path d="M 400,168 H 716 Q 724,168 724,176 V 312 Q 724,320 716,320 H 400" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- F8 packages → diminish-studio (orval codegen, crosses F3 with a hop) -->
+      <path d="M 96,208 V 248 Q 96,256 104,256 H 312 Q 320,256 320,264 V 328 a 8,8 0 0,1 0,16 V 472 Q 320,480 328,480 H 400" fill="none" stroke="#7a8399" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+
+      <!-- ══════════════ ARROW LABELS ══════════════ -->
+      <g font-family="'Geist Mono', monospace" font-size="8" fill="#7a8399" letter-spacing="0.06em" text-anchor="middle">
+        <rect x="324" y="132" width="40" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="344" y="141">REST</text>
+        <rect x="660" y="116" width="40" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="680" y="125">S3 PUT</text>
+        <rect x="324" y="316" width="48" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="348" y="325">DRIZZLE</text>
+        <rect x="420" y="220" width="36" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="438" y="229">AUTH</text>
+        <rect x="646" y="176" width="40" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="666" y="185">ANALYZE</text>
+        <rect x="734" y="236" width="36" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="752" y="245">DRIZZLE</text>
+        <rect x="188" y="236" width="44" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="210" y="245">CODEGEN</text>
+      </g>
+
+      <!-- ══════════════ NODES ══════════════ -->
+      <!-- diminish-studio -->
+      <rect x="64" y="96" width="224" height="112" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="76" y="104" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+      <text x="90" y="112" fill="rgba(45,49,66,0.80)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">APP</text>
+      <text x="176" y="148" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Diminish Studio</text>
+      <text x="176" y="164" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Vite · React 19 · PWA</text>
+
+      <!-- admin-new -->
+      <rect x="64" y="280" width="224" height="112" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="76" y="288" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+      <text x="90" y="296" fill="rgba(45,49,66,0.80)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">APP</text>
+      <text x="176" y="332" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Admin (New)</text>
+      <text x="176" y="348" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Next.js · BEUI · fa/en</text>
+
+      <!-- admin -->
+      <rect x="64" y="464" width="224" height="112" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="76" y="472" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+      <text x="90" y="480" fill="rgba(45,49,66,0.80)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">APP</text>
+      <text x="176" y="516" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Admin (Legacy)</text>
+      <text x="176" y="532" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Next.js 16 · control plane</text>
+
+      <!-- api-server (focal) -->
+      <rect x="400" y="96" width="224" height="112" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+      <rect x="412" y="104" width="28" height="12" rx="2" fill="transparent" stroke="rgba(235,108,54,0.40)" stroke-width="0.8"/>
+      <text x="426" y="112" fill="rgba(235,108,54,0.80)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">API</text>
+      <text x="512" y="148" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">API Server</text>
+      <text x="512" y="164" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Express 5 · Drizzle · Clerk</text>
+
+      <!-- Postgres -->
+      <rect x="400" y="280" width="208" height="112" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+      <rect x="412" y="288" width="28" height="12" rx="2" fill="transparent" stroke="rgba(79,93,117,0.40)" stroke-width="0.8"/>
+      <text x="426" y="296" fill="rgba(79,93,117,0.80)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">DB</text>
+      <text x="504" y="332" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Postgres (Neon)</text>
+      <text x="504" y="348" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Drizzle · 8 tables</text>
+
+      <!-- shared packages -->
+      <rect x="400" y="464" width="224" height="112" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="412" y="472" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+      <text x="426" y="480" fill="rgba(45,49,66,0.80)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">PKG</text>
+      <text x="512" y="516" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Shared Packages</text>
+      <text x="512" y="532" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">api-spec · client · zod · db</text>
+
+      <!-- B2 -->
+      <rect x="736" y="96" width="184" height="112" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+      <rect x="748" y="104" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.30)" stroke-width="0.8"/>
+      <text x="762" y="112" fill="rgba(45,49,66,0.60)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">OBJ</text>
+      <text x="828" y="148" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Backblaze B2</text>
+      <text x="828" y="164" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">S3-compatible · presigned</text>
+
+      <!-- Clerk -->
+      <rect x="736" y="280" width="184" height="112" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+      <rect x="748" y="288" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.30)" stroke-width="0.8"/>
+      <text x="762" y="296" fill="rgba(45,49,66,0.60)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">AUTH</text>
+      <text x="828" y="332" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Clerk</text>
+      <text x="828" y="348" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Sessions · JWT verify</text>
+
+      <!-- RunPod -->
+      <rect x="736" y="464" width="184" height="112" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+      <rect x="748" y="472" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.30)" stroke-width="0.8"/>
+      <text x="762" y="480" fill="rgba(45,49,66,0.60)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">GPU</text>
+      <text x="828" y="516" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">RunPod (opt.)</text>
+      <text x="828" y="532" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Chord analysis · async</text>
+
+      <!-- ══════════════ LEGEND ══════════════ -->
+      <line x1="32" y1="624" x2="920" y2="624" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <text x="32" y="640" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+      <rect x="140" y="636" width="12" height="8" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+      <text x="160" y="644" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">FOCAL</text>
+      <rect x="232" y="636" width="12" height="8" rx="2" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+      <text x="252" y="644" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">STORE</text>
+      <rect x="316" y="636" width="12" height="8" rx="2" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+      <text x="336" y="644" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">EXTERNAL</text>
+      <line x1="424" y1="640" x2="448" y2="640" stroke="#7a8399" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="456" y="644" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">OPTIONAL / ASYNC</text>
+      <line x1="588" y1="640" x2="612" y2="640" stroke="#4f5d75" stroke-width="1.2"/>
+      <text x="620" y="644" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">PRIMARY FLOW</text>
+    </svg>
+  </div>
+</body>
+</html>

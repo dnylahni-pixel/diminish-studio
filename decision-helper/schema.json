@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://diminish.studio/decision-helper/schema.json",
+  "title": "Decision Inbox file",
+  "description": "فرمت فایل تصمیم در پوشه‌ی decision-inbox. فایل‌های در انتظار: pending-<id>.json — بعد از پاسخ، به resolved-<id>.json تغییر نام می‌یابد و status به \"resolved\" می‌شود.",
+  "type": "object",
+  "required": ["schemaVersion", "id", "title", "status", "createdAt", "questions"],
+  "properties": {
+    "schemaVersion": { "const": 1, "description": "نسخه‌ی فرمت" },
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$", "description": "نام کوتاه/کباب‌کیس؛ برابر slug فایل. باید یکتا باشد." },
+    "title": { "type": "string", "minLength": 1, "description": "عنوان تصمیم" },
+    "context": { "type": "string", "description": "زمینه‌ی کوتاه (اختیاری)" },
+    "status": { "enum": ["pending", "resolved"] },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "resolvedAt": { "type": ["string", "null"] },
+    "source": { "type": "string", "description": "چه کسی/چه چیزی این فایل را نوشته (مثلاً \"claude\")" },
+    "questions": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/question" } }
+  },
+  "$defs": {
+    "question": {
+      "type": "object",
+      "required": ["id", "question", "type"],
+      "properties": {
+        "id": { "type": "string", "description": "کلید پاسخ در درخواست resolve" },
+        "question": { "type": "string", "minLength": 1 },
+        "type": { "enum": ["choice", "multi-choice", "text", "number"] },
+        "options": { "type": "array", "items": { "type": "string" }, "description": "فقط برای choice / multi-choice" },
+        "required": { "type": "boolean", "default": false },
+        "note": { "type": "string", "description": "راهنمای اختیاری زیر سوال" },
+        "answer": { "description": "پاسخ بعد از resolve: choice/text → string؛ multi-choice → string[]؛ number → number؛ بی‌پاسخ → null" },
+        "answeredAt": { "type": ["string", "null"] },
+        "explanation": { "type": ["string", "null"], "description": "توضیح اختیاری کاربر درباره‌ی پاسخ (در UI برای هر سوال فیلد دارد؛ بعد از resolve پر می‌شود)" }
+      }
+    }
+  }
+}

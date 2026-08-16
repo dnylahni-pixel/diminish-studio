@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>دسته‌بندی رفتارهای قابل‌کنترل</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#ffffff; --line:#e3e6ea; --text:#1c2430; --muted:#6b7686;
+    --accent:#2563eb; --accent-soft:#e8effc; --green:#16a34a; --green-soft:#e6f6ec;
+    --amber:#d97706; --amber-soft:#fdf3e3; --red:#dc2626; --red-soft:#fdecec; --chip-on:#eef2ff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,"Segoe UI",Vazirmatn,Tahoma,sans-serif;font-size:14px;line-height:1.6}
+  header{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--line);padding:10px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  header h1{font-size:16px;margin:0;font-weight:700}
+  .bar{flex:1;min-width:180px;height:8px;background:var(--line);border-radius:99px;overflow:hidden}
+  .bar>i{display:block;height:100%;background:var(--green);transition:width .2s}
+  .stats{font-size:12px;color:var(--muted);white-space:nowrap}
+  .btns{display:flex;gap:6px;flex-wrap:wrap}
+  button.btn{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;font-family:inherit}
+  button.btn:hover{border-color:var(--accent);color:var(--accent)}
+  button.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  button.btn.primary:hover{background:#1d4fd8;color:#fff}
+  button.btn.danger{border-color:#f3caca;color:var(--red)}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap}
+  .tab{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:4px 12px;font-size:12px;cursor:pointer}
+  .tab.on{background:var(--chip-on);border-color:var(--accent);color:var(--accent);font-weight:600}
+  input[type=search]{border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12px;width:180px;font-family:inherit}
+  .wrap{max-width:1180px;margin:16px auto;padding:0 12px 60px}
+  .item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+  .item.parked{opacity:.55;background:#fbfbfc}
+  .item.hide{display:none}
+  .item-head{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap}
+  .id{font-family:ui-monospace,monospace;font-size:11px;background:var(--chip-on);color:var(--accent);border-radius:6px;padding:2px 7px;white-space:nowrap;margin-top:3px}
+  .name{font-weight:600;font-size:13.5px}
+  .meta{font-size:11px;color:var(--muted);margin-top:2px;word-break:break-all}
+  .quick{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+  .chips{display:flex;gap:4px;flex-wrap:wrap}
+  .chip{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:2px 9px;font-size:11.5px;cursor:pointer;user-select:none}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  select{font-family:inherit;font-size:12px;border:1px solid var(--line);border-radius:8px;padding:4px 8px;background:var(--card)}
+  .skip{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--amber);border:1px solid #f3d9b0;background:var(--amber-soft);border-radius:8px;padding:3px 9px;cursor:pointer}
+  .skip input{accent-color:var(--amber);cursor:pointer}
+  details{margin-top:8px}
+  summary{font-size:11.5px;color:var(--accent);cursor:pointer;user-select:none}
+  .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+  @media(max-width:720px){.detail-grid{grid-template-columns:1fr}}
+  .fld{font-size:11.5px}
+  .fld>label{display:block;color:var(--muted);margin-bottom:3px}
+  select[multiple]{min-height:90px}
+  .tags{display:flex;gap:4px;flex-wrap:wrap}
+  .tag-chip{border:1px solid var(--line);border-radius:99px;padding:1px 8px;font-size:11px;background:var(--card);cursor:pointer}
+  .tag-chip.on{background:var(--green-soft);border-color:var(--green);color:var(--green)}
+  textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-family:inherit;font-size:12px;min-height:44px}
+  input[type=text]{border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:12px;width:100%;font-family:inherit}
+  .toast{position:fixed;bottom:18px;right:50%;transform:translateX(50%);background:#111827;color:#fff;padding:8px 16px;border-radius:10px;font-size:12.5px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:50}
+  .toast.show{opacity:1}
+  .hint{background:var(--chip-on);border:1px dashed #b9cef7;border-radius:10px;padding:8px 12px;font-size:12px;color:#33415c;margin-bottom:12px}
+  .legend{font-size:11px;color:var(--muted);margin-bottom:10px}
+</style>
+</head>
+<body>
+<header>
+  <h1>دسته‌بندی رفتارهای قابل‌کنترل</h1>
+  <div class="bar"><i id="progressbar"></i></div>
+  <div class="stats" id="stats"></div>
+  <div class="btns">
+    <button class="btn primary" onclick="exportJson()">خروجی JSON به مالک</button>
+    <button class="btn" onclick="copyJson()">کپی در کلیپ‌بورد</button>
+    <button class="btn danger" onclick="resetAll()">شروع دوباره</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="hint">
+    برای هر رفتار مشخص کنید: <b>چند محور</b> (برچسب‌ها را کلیک کنید — می‌تواند چندتایی باشد)،
+    <b>چیستی</b> (فیچر/تنظیم/سقف/…)، و در بخش «جزییات» <b>وابسته به چه چیزهایی</b> و <b>مربوط به کدام تیبل/بک‌اند</b>.
+    اگر فعلاً نمی‌خواهید تصمیم بگیرید، گزینه‌ی «فعلاً رد می‌کنم» را بزنید. همه‌چیز خودکار ذخیره می‌شود.
+  </div>
+  <div class="legend" id="legend"></div>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
+    <input type="search" id="q" placeholder="جستجو…" oninput="applyFilters()">
+    <div class="tabs" id="tabs"></div>
+  </div>
+
+  <div id="items"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============ داده‌ی ۴۷ رفتار (از Master List) ============
+// [id, نام, نوع, لایه, مقدار فعلی, محل, گروه قبلی]
+const ITEMS = [
+["BC-01","فعال بودن تحلیل (RunPod)","boolean","BE","فقط env","apps/api-server/src/routes/analyze.ts:83","کلی"],
+["BC-02","timeout تحلیل","number","BE","300000 ms","apps/api-server/src/routes/analyze.ts:113","کلی"],
+["BC-03","نسخه‌ی تحلیل","string","BE","\"1\"","apps/api-server/src/routes/analyze.ts:228","کلی"],
+["BC-04","انقضای URL تحلیل","number","BE","3600 s","apps/api-server/src/routes/analyze.ts:99","کلی"],
+["BC-05","انقضای URL master track","number","BE","900 s","apps/api-server/src/routes/song-details.ts:155","کلی"],
+["BC-06","حداکثر حجم آپلود","number","BE","104857600 (100MB)","apps/api-server/src/routes/uploads/uploads.constants.ts:11","کلی"],
+["BC-07","حداکثر مدت آپلود","number","BE","600 s","apps/api-server/src/routes/uploads/uploads.constants.ts:13","کلی"],
+["BC-08","انواع MIME مجاز","list","BE","۵ نوع","apps/api-server/src/routes/uploads/uploads.constants.ts:3","کلی"],
+["BC-09","انقضای presign","number","BE","900 s","apps/api-server/src/routes/uploads/uploads.constants.ts:14","کلی"],
+["BC-10","سقف نرخ آپلود (rate limit)","number","BE","10 / 60000 ms","apps/api-server/src/routes/uploads/uploads.service.ts:29","کلی"],
+["BC-11","تعداد آهنگ‌های ویژه","number","BE","8","apps/api-server/src/routes/songs.ts:80","کلی"],
+["BC-12","قانون مهارت آکورد","number×۲","BE","≥5 تلاش ، ≥80% موفقیت","apps/api-server/src/routes/learning.ts:69","کلی"],
+["BC-13","retry احراز هویت Clerk","number","BE","60 s","apps/api-server/src/routes/users.ts:37 + library.ts:87","کلی"],
+["BC-14","پارامترهای SQL pool","number×۳","BE","15000/30000/max","packages/db/src/index.ts:15","کلی"],
+["BC-15","دسترسی به قابلیت در پلن","boolean","DB","plan_features.is_included","apps/admin-new/src/db/schema/catalog/plans.ts","پلن"],
+["BC-16","سقف مصرف در پلن","number+period","DB","plan_limits","apps/admin-new/src/db/schema/catalog/rules.ts:31","پلن"],
+["BC-17","قیمت‌گذاری مصرف‌محور","struct","DB","feature_pricing_rules","apps/admin-new/src/db/schema/catalog/rules.ts:58","پلن"],
+["BC-18","سیاست اعتبار پلن","struct","DB","plan_credit_policies","apps/admin-new/src/db/schema/catalog/rules.ts:89","پلن"],
+["BC-19","قوانین تغییر پلن","struct","DB","plan_change_rules","apps/admin-new/src/db/schema/catalog/rules.ts:116","پلن"],
+["BC-20","سهمیه‌ی پیش‌فرض ذخیره‌سازی پلن","number","DB","(پیشنهادی از طریق plan_limits)","—","پلن"],
+["BC-21","defaultAccess قابلیت","enum","DB","features.metadata.defaultAccess","apps/admin-new/src/db/schema/catalog/features.ts:8","پلن"],
+["BC-22","وابستگی قابلیت‌ها","graph","DB","feature_dependencies","apps/admin-new/src/db/schema/catalog/features.ts:24","پلن"],
+["BC-23","سهمیه‌ی ذخیره‌سازی کاربر","number","DB","users.storage_quota_bytes","packages/db/src/schema/users.ts:19","کاربر"],
+["BC-24","وضعیت کاربر","enum","DB","user_status (ستون هنوز نیست)","apps/admin-new/src/db/schema/enums.ts:4","کاربر"],
+["BC-25","حساب اعتبار کاربر","struct","DB","credit_accounts","apps/admin-new/src/db/schema/credits/credit-accounts.ts:8","کاربر"],
+["BC-26","اشتراک / افزونه / تخفیف کاربر","struct","DB","subscriptions و…","apps/admin-new/src/db/schema/billing/*","کاربر"],
+["BC-27","دموی یادگیری (اتصال به کاربر ۱)","boolean","BE","DEMO_USER_ID = 1 بدون auth","apps/api-server/src/routes/learning.ts:9 + chords.ts:9","کاربر"],
+["BC-28","دسترسی آزمایشی پایلوت","struct","—","ساخته نشده (ADR)","CONTEXT.md","کاربر"],
+["BC-29","انتشار / عدم انتشار آهنگ","enum","DB","songs.status","packages/db/src/schema/songs.ts:30","منبع"],
+["BC-30","ویژه‌سازی آهنگ","boolean","DB","songs.featured","apps/api-server/src/routes/songs.ts:79","منبع"],
+["BC-31","سختی آهنگ","enum","DB","songs.difficulty","—","منبع"],
+["BC-32","وضعیت تحلیل آهنگ","enum","DB","song_analyses.analysis_status","packages/db/src/schema/song-analyses.ts:17","منبع"],
+["BC-33","کاتالوگ آکورد","data","DB","chords","—","منبع"],
+["BC-34","ورود با لینک (URL import)","boolean","FE","disabled","apps/diminish-studio/src/process.tsx:306,601","فرانت"],
+["BC-35","آستانه‌های هشدار سهمیه","numbers","FE","70% / 90%","apps/diminish-studio/src/components/StorageQuotaBar.tsx:42","فرانت"],
+["BC-36","سطح‌های پیچیدگی آکورد","list","FE","simple/medium/pro","apps/diminish-studio/src/player.tsx:356","فرانت"],
+["BC-37","محدودیت‌های پلیر","numbers","FE","سرعت 0.3–2.0 ، نیم‌پرده −12..12","apps/diminish-studio/src/player.tsx:243","فرانت"],
+["BC-38","مسیر پس از ورود","string","FE","/library","apps/diminish-studio/src/login.tsx ، register.tsx","فرانت"],
+["BC-39","مسیرها / منو","struct","FE","استاتیک wouter","apps/diminish-studio/src/App.tsx:39 + app-layout.tsx:16","فرانت"],
+["BC-40","متن‌های حالت خالی/خطا","strings","FE","سخت‌کد","apps/diminish-studio/src/library.tsx ، music-hub.tsx ، profile.tsx","فرانت"],
+["BC-41","متن‌های مارکتینگ","strings","FE","سخت‌کد","apps/diminish-studio/src/home.tsx:29-101","برند"],
+["BC-42","برندینگ اپ (نام / نسخه)","strings","FE","DiminishStudio ، v1.0.0","apps/diminish-studio/src/app-layout.tsx:44,114,153","برند"],
+["BC-43","PWA manifest","struct","BT","screenshots: [] و…","apps/diminish-studio/vite.config.ts:35-63","برند"],
+["BC-44","اسرار B2 / Clerk / RunPod","—","BE","env","apps/api-server/src/config.ts:111-128","امنیتی"],
+["BC-45","validation magic-bytes","—","BE","MAGIC_BYTES_MAP","apps/api-server/src/routes/uploads/uploads.constants.ts:25","امنیتی"],
+["BC-46","قفل atomic سهمیه","—","BE","incrementStorageUsed","apps/api-server/src/routes/uploads/uploads.repository.ts:56","امنیتی"],
+["BC-47","گارد production DB","—","BE","env-check","apps/api-server/src/config.ts:62","امنیتی"],
+];
+
+const CATS = ["کلی","پلن","کاربر","منبع","فرانت","برند","عملیاتی","امنیتی"];
+
+const TYPES = [
+  ["feature","فیچر (boolean)"],
+  ["metered","فیچر مصرف‌محور (metered)"],
+  ["limit","سقف / محدودیت"],
+  ["pricing","قیمت / هزینه"],
+  ["setting","تنظیم KV"],
+  ["content","محتوا / متن"],
+  ["state","وضعیت داده"],
+  ["infra","زیرساخت / عملیاتی"],
+  ["security","امنیتی"],
+];
+
+const RELATED = [
+  "features","plan_limits","feature_pricing_rules","plan_credit_policies","plan_change_rules",
+  "feature_dependencies","app_settings (پیشنهادی)","users","songs","song_analyses","chords",
+  "learning_sessions","uploads","analyze (RunPod)","subscriptions","credit_accounts","billing",
+  "config/env","PWA/build","frontend/UI"
+];
+
+const LS_KEY = "bcc-decisions-v1";
+
+// state: { [id]: {cats:[],type:'',depends:[],related:[],tags:[],note:'',skipped:false} }
+let state = load();
+let filter = "all";
+let q = "";
+
+function load(){
+  try{ const raw = localStorage.getItem(LS_KEY); if(raw) return JSON.parse(raw); }catch(e){}
+  return {};
+}
+function save(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){}
+}
+function itemState(id){
+  if(!state[id]) state[id] = {cats:[],type:"",depends:[],related:[],tags:[],note:"",skipped:false};
+  return state[id];
+}
+
+function render(){
+  const container = document.getElementById("items");
+  const legend = document.getElementById("legend");
+  const total = ITEMS.length;
+  let defined = 0, parked = 0;
+  ITEMS.forEach(([id]) => {
+    const s = itemState(id);
+    if(s.skipped) parked++;
+    else if(s.cats.length>0 || s.type) defined++;
+  });
+  const undecided = total - defined - parked;
+  document.getElementById("progressbar").style.width = ((defined+parked)/total*100)+"%";
+  document.getElementById("stats").textContent =
+    `${defined} تعیین‌شده · ${parked} ردشده(پارک) · ${undecided} تصمیم‌نشده · از ${total}`;
+
+  // legend
+  legend.innerHTML = "لایه‌ها: <b>BE</b>=بک‌اند · <b>FE</b>=فرانت · <b>DB</b>=داده · <b>BT</b>=build-time — «گروه قبلی» فقط پیشنهاد است.";
+
+  // tabs
+  const tabs = document.getElementById("tabs");
+  const defs = [["all","همه"],["defined","تعیین‌شده"],["parked","ردشده(پارک)"],["undecided","تصمیم‌نشده"]];
+  tabs.innerHTML = defs.map(([k,l]) => `<button class="tab ${filter===k?'on':''}" onclick="setFilter('${k}')">${l}</button>`).join("");
+
+  container.innerHTML = ITEMS.map(([id,name,type,layer,value,loc,prev]) => {
+    const s = itemState(id);
+    const visible = matchesFilter(id,s);
+    const depOptions = ITEMS.filter(([d])=>d!==id).map(([d,dn])=>`<option value="${d}" ${s.depends.includes(d)?'selected':''}>${d} — ${dn}</option>`).join("");
+    const relChips = RELATED.map(r=>`<button class="tag-chip ${s.related.includes(r)?'on':''}" onclick="toggleRelated('${id}','${r}')">${r}</button>`).join("");
+    const catChips = CATS.map(c=>`<button class="chip ${s.cats.includes(c)?'on':''}" onclick="toggleCat('${id}','${c}')">${c}</button>`).join("");
+    const typeOpts = `<option value="">انتخاب…</option>` + TYPES.map(([v,l])=>`<option value="${v}" ${s.type===v?'selected':''}>${l}</option>`).join("");
+    return `
+    <div class="item ${s.skipped?'parked':''} ${visible?'':'hide'}" data-id="${id}" data-search="${(id+' '+name).toLowerCase()}">
+      <div class="item-head">
+        <span class="id">${id}</span>
+        <div style="flex:1;min-width:200px">
+          <div class="name">${name}</div>
+          <div class="meta">نوع: ${type} · لایه: ${layer} · مقدار فعلی: ${value}<br>${loc}${prev?` · گروه قبلی: ${prev}`:''}</div>
+        </div>
+        <label class="skip"><input type="checkbox" ${s.skipped?'checked':''} onchange="toggleSkip('${id}',this.checked)"> فعلاً رد می‌کنم</label>
+      </div>
+      <div class="quick">
+        <div class="chips">${catChips}</div>
+        <select onchange="setType('${id}',this.value)" title="چیستی">
+          ${typeOpts}
+        </select>
+      </div>
+      <details>
+        <summary>جزییات (وابستگی‌ها · تیبل‌ها · برچسب سفارشی · یادداشت)</summary>
+        <div class="detail-grid">
+          <div class="fld"><label>وابسته به چه چیزهایی (Ctrl+کلیک چندتایی)</label>
+            <select multiple onchange="setDepends('${id}',this)">${depOptions}</select></div>
+          <div class="fld"><label>مربوط به کدام تیبل / بک‌اند</label><div class="tags">${relChips}</div></div>
+          <div class="fld"><label>برچسب سفارشی (با کاما جدا کنید)</label>
+            <input type="text" value="${s.tags.join('، ')}" onchange="setTags('${id}',this.value)"></div>
+          <div class="fld"><label>یادداشت</label>
+            <textarea onchange="setNote('${id}',this.value)">${s.note||''}</textarea></div>
+        </div>
+      </details>
+    </div>`;
+  }).join("");
+}
+
+function matchesFilter(id,s){
+  if(q && !(id+" "+(ITEMS.find(i=>i[0]===id)||[])[1]).toLowerCase().includes(q.toLowerCase())) return false;
+  if(filter==="all") return true;
+  if(filter==="defined") return !s.skipped && (s.cats.length>0 || s.type);
+  if(filter==="parked") return s.skipped;
+  return !s.skipped && !(s.cats.length>0 || s.type);
+}
+function setFilter(f){ filter=f; render(); }
+function applyFilters(){ q = document.getElementById("q").value; render(); }
+
+function toggleCat(id,c){
+  const s = itemState(id);
+  s.cats = s.cats.includes(c) ? s.cats.filter(x=>x!==c) : [...s.cats,c];
+  save(); render();
+}
+function toggleRelated(id,r){
+  const s = itemState(id);
+  s.related = s.related.includes(r) ? s.related.filter(x=>x!==r) : [...s.related,r];
+  save(); render();
+}
+function setType(id,v){ itemState(id).type=v; save(); render(); }
+function setDepends(id,el){ itemState(id).depends = [...el.selectedOptions].map(o=>o.value); save(); render(); }
+function setTags(id,v){
+  itemState(id).tags = v.split(/[،,]/).map(t=>t.trim()).filter(Boolean);
+  save();
+}
+function setNote(id,v){ itemState(id).note=v; save(); }
+function toggleSkip(id,v){ itemState(id).skipped=v; save(); render(); }
+
+function toast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("show"), 2200);
+}
+
+function buildExport(){
+  return ITEMS.map(([id,name,type,layer,value,loc,prev])=>{
+    const s = itemState(id);
+    return {
+      id, name, nativeType:type, layer, value, location:loc, prevGroup:prev,
+      skipped:s.skipped,
+      categories:s.cats, type:s.type,
+      typeLabel: s.type ? (TYPES.find(t=>t[0]===s.type)||[,''])[1] : "",
+      depends:s.depends.map(d=>{
+        const it = ITEMS.find(x=>x[0]===d); return {id:d, name: it?it[1]:d};
+      }),
+      related:s.related, customTags:s.tags, note:s.note
+    };
+  });
+}
+function exportJson(){
+  const json = JSON.stringify({version:1, exportedAt:new Date().toISOString(), items:buildExport()}, null, 2);
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([json],{type:"application/json"}));
+  a.download = "behavior-control-decisions.json";
+  a.click();
+  toast("فایل JSON دانلود شد — آن را در چت بدهید");
+}
+function copyJson(){
+  const json = JSON.stringify({version:1, items:buildExport()}, null, 2);
+  navigator.clipboard.writeText(json).then(()=>toast("در کلیپ‌بورد کپی شد — در چت paste کنید")).catch(()=>toast("کپی نشد"));
+}
+function resetAll(){
+  if(!confirm("همه‌ی تصمیم‌ها پاک شود؟")) return;
+  state = {}; save(); render(); toast("شروع دوباره");
+}
+
+render();
+</script>
+</body>
+</html>

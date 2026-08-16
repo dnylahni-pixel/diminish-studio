@@ -132,17 +132,17 @@ if (runApi) {
     executable("scripts/node_modules/.bin/tsx"),
     ["watch", "src/index.ts"],
     { PORT: process.env.API_PORT || "3000" },
-    resolve(workspaceRoot, "artifacts/api-server"),
+    resolve(workspaceRoot, "apps/api-server"),
   );
 }
 
 if (runWeb) {
   start(
     "web",
-    executable("artifacts/diminish-studio/node_modules/.bin/vite"),
+    executable("apps/diminish-studio/node_modules/.bin/vite"),
     ["--config", "vite.config.ts", "--host", "0.0.0.0"],
     { PORT: process.env.WEB_PORT || "5173" },
-    resolve(workspaceRoot, "artifacts/diminish-studio"),
+    resolve(workspaceRoot, "apps/diminish-studio"),
   );
 }
 

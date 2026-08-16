@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "معماری Diminish Studio — مونوریپوی pnpm",
+    "output": "diminish-architecture.html",
+    "quality_profile": "showcase",
+    "viewBox": [800, 424],
+    "views": [
+      { "id": "main-path", "label": "مسیر اصلی", "focus": ["diminish-studio", "api-server", "postgres"], "note": "مسیر درخواست کاربر از وب‌اپ تا دیتابیس." },
+      { "id": "identity", "label": "احراز هویت", "focus": ["clerk", "diminish-studio"], "note": "ورود کاربر از طریق Clerk؛ اعتبارسنجی JWT توسط سرور." },
+      { "id": "storage", "label": "ذخیره‌سازی و آنالیز", "focus": ["b2", "runpod", "api-server"], "note": "آپلود فایل‌های صوتی به B2 و آنالیز اختیاری آکورد." }
+    ]
+  },
+  "layout": { "mode": "grid", "origin": [40, 80], "cols": 3, "gapX": 56, "gapY": 40, "cellW": 200, "cellH": 72 },
+  "components": [
+    { "id": "diminish-studio", "type": "frontend", "label": "Diminish Studio", "sublabel": "Vite · React 19 · PWA", "row": 0, "col": 0 },
+    { "id": "admin-new", "type": "frontend", "label": "Admin (جدید)", "sublabel": "Next.js · BEUI · بی‌واسطه", "row": 1, "col": 0 },
+    { "id": "admin", "type": "frontend", "label": "Admin (قدیمی)", "sublabel": "Next.js 16 · کنترل‌پلن", "row": 2, "col": 0 },
+    { "id": "api-server", "type": "backend", "label": "API Server", "sublabel": "Express 5 · Drizzle", "row": 0, "col": 1 },
+    { "id": "postgres", "type": "database", "label": "Postgres (Neon)", "sublabel": "Drizzle · 8 جدول", "row": 1, "col": 1 },
+    { "id": "packages", "type": "backend", "label": "پکیج‌های مشترک", "sublabel": "api-spec · client · db", "row": 2, "col": 1 },
+    { "id": "runpod", "type": "external", "label": "RunPod (اختیاری)", "sublabel": "آنالیز آکورد · async", "row": 0, "col": 2 },
+    { "id": "b2", "type": "cloud", "label": "Backblaze B2", "sublabel": "S3-compatible · presigned", "row": 1, "col": 2 },
+    { "id": "clerk", "type": "security", "label": "Clerk", "sublabel": "Sessions · JWT", "row": 2, "col": 2 }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "اپ‌های کاربر", "wraps": ["diminish-studio", "admin-new", "admin"] },
+    { "kind": "region", "label": "بک‌اند و داده", "wraps": ["api-server", "postgres", "packages"] },
+    { "kind": "region", "label": "سرویس‌های بیرونی", "wraps": ["runpod", "b2", "clerk"] }
+  ],
+  "connections": [
+    { "id": "web-to-api", "from": "diminish-studio", "to": "api-server", "label": "REST", "variant": "emphasis" },
+    { "id": "web-to-clerk", "from": "diminish-studio", "to": "clerk", "label": "ورود JWT", "fromSide": "left", "toSide": "left", "via": [[8, 110], [8, 280], [500, 280], [500, 334]], "labelAt": [268, 280], "labelDy": -14 },
+    { "id": "api-to-postgres", "from": "api-server", "to": "postgres" },
+    { "id": "api-to-b2", "from": "api-server", "to": "b2", "label": "آپلود S3" },
+    { "id": "api-to-runpod", "from": "api-server", "to": "runpod", "label": "آنالیز آکورد", "variant": "dashed" },
+    { "id": "adminnew-to-postgres", "from": "admin-new", "to": "postgres", "label": "مستقیم" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "برنامه کاربران", "items": ["PWA با Vite + React 19 و Clerk", "پخش موسیقی با تغییر سرعت و گام (AudioEngine)", "کلاینت React Query تولیدشده با orval از قرارداد OpenAPI"] },
+    { "dot": "emerald", "title": "بک‌اند", "items": ["Express 5 + Drizzle + Neon Postgres", "مصرف پکیج‌های api-zod و db از @workspace", "آپلود S3 سازگار با Backblaze B2"] },
+    { "dot": "rose", "title": "ادمین و امنیت", "items": ["Admin جدید: دسترسی مستقیم به دیتابیس، بدون لایه API", "Admin قدیمی: کنترل‌پلن مستقل Next.js 16", "Clerk برای ورود کاربر و verify JWT در سرور"] }
+  ]
+}

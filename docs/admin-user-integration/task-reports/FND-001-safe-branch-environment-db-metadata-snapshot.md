@@ -20,7 +20,7 @@
 
 ## کنترل Admin read-only
 
-- Admin path: `/home/danial/diminish all project/super-admin-diminish`
+- Admin path: `/home/danial/diminish all project/diminish-studio/apps/admin`
 - status قبل: branch `integration/runpod`؛ 55 entry موجود؛ fingerprint برابر `5cea033db0050a09ba955747be5211509fb138984febf3b7285210dcfe4fd607`
 - status بعد: 55 entry موجود؛ fingerprint برابر `5cea033db0050a09ba955747be5211509fb138984febf3b7285210dcfe4fd607`
 - تغییر تازه توسط این Agent: `NO`

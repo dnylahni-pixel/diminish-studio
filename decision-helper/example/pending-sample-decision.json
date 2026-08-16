@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "id": "sample-decision",
+  "title": "نمونه تصمیم — نسخه‌ی جدید اپ",
+  "context": "این یک فایل نمونه است تا فرمت و جریان کار را ببینی. برای تست، آن را در decision-inbox کپی کن:  cp decision-helper/example/pending-sample-decision.json decision-inbox/pending-sample-decision.json",
+  "status": "pending",
+  "createdAt": "2026-08-08T10:00:00.000Z",
+  "resolvedAt": null,
+  "source": "claude",
+  "questions": [
+    {
+      "id": "target",
+      "question": "نسخه‌ی جدید ابتدا برای کدام پلتفرم منتشر شود؟",
+      "type": "multi-choice",
+      "options": [
+        "وب",
+        "موبایل",
+        "دسکتاپ",
+        "همه همزمان"
+      ],
+      "required": true,
+      "note": "می‌توانی چند گزینه را انتخاب کنی",
+      "answer": null,
+      "answeredAt": null,
+      "explanation": null
+    },
+    {
+      "id": "timing",
+      "question": "زمان انتشار چطور باشد؟",
+      "type": "choice",
+      "options": [
+        "همین هفته",
+        "یک ماه دیگر",
+        "پس از تست بتا"
+      ],
+      "required": true,
+      "answer": null,
+      "answeredAt": null,
+      "explanation": null
+    },
+    {
+      "id": "why",
+      "question": "توضیح کوتاهی درباره‌ی دلیل انتخاب‌ها بنویس (اختیاری).",
+      "type": "text",
+      "required": false,
+      "answer": null,
+      "answeredAt": null,
+      "explanation": null
+    }
+  ]
+}
