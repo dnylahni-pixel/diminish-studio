@@ -341,6 +341,9 @@ importers:
       '@appica/ui-react':
         specifier: ^1.0.0
         version: 1.0.0(@date-fns/tz@1.4.1)(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tailwindcss@4.3.0)
+      '@clerk/nextjs':
+        specifier: ^7.6.0
+        version: 7.6.4(next@16.2.11(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@neondatabase/serverless':
         specifier: ^1.1.0
         version: 1.1.0
