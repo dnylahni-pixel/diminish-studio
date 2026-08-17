@@ -1,9 +1,10 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Play, Pause, SkipBack, SkipForward, ChevronsLeft, ChevronsRight, RefreshCw } from "lucide-react";
 import { fmt } from "@/lib/player-utils";
+import { TempoControl } from "./TempoControl";
 
 export function TransportControls({
-  uiVisible, time, setTime, song, resetIdle, tempoDrag, bpmDisplay,
+  uiVisible, time, setTime, song, resetIdle,
   tempo, setTempo, playing, setPlaying, keyDrag, keyDisplay, semitones, setSemitones,
   tracksReady, loadProgress
 }: any) {
@@ -12,7 +13,7 @@ export function TransportControls({
     <motion.div
       animate={{ opacity: uiVisible ? 1 : 0, y: uiVisible ? 0 : 6 }}
       transition={{ duration: 0.35 }}
-      className="flex-shrink-0 border-t border-border/40 bg-card/20 px-4 pt-2.5 flex flex-col gap-2.5"
+      className="relative flex-shrink-0 border-t border-border/40 bg-card/20 px-4 pt-2.5 flex flex-col gap-2.5"
       style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))", pointerEvents: uiVisible ? "auto" : "none" }}
       data-testid="transport"
     >
@@ -46,24 +47,12 @@ export function TransportControls({
       </div>
 
       <div className="flex items-center justify-between">
-        <div
-          className="flex flex-col items-center w-14 cursor-ns-resize select-none touch-none"
-          {...tempoDrag}
-          data-testid="drag-tempo"
-        >
-          <span className="text-base font-bold tabular-nums leading-none">{bpmDisplay}</span>
-          <span className="text-[9px] text-muted-foreground/45 tracking-widest uppercase mt-0.5">BPM</span>
-          {tempo !== 1 && (
-            <button
-              className="mt-0.5 text-muted-foreground/40 hover:text-muted-foreground transition-colors"
-              onPointerDown={e => e.stopPropagation()}
-              onClick={() => setTempo(1)}
-              data-testid="btn-tempo-reset"
-            >
-              <RefreshCw className="w-2.5 h-2.5" />
-            </button>
-          )}
-        </div>
+        <TempoControl
+          bpm={song.bpm}
+          tempo={tempo}
+          setTempo={setTempo}
+          resetIdle={resetIdle}
+        />
 
         <div className="flex items-center gap-4">
           <button onClick={() => { setTime((t: number) => Math.max(0, t - 10)); resetIdle(); }} className="text-muted-foreground hover:text-foreground transition-colors" data-testid="btn-rw">

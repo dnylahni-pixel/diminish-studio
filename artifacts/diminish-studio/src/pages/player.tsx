@@ -231,7 +231,6 @@ useEffect(() => {
     };
   }, []);
 
-  const tempoDrag = useDragChange(tempo, setTempo, 6, 0.05, 0.3, 2.0);
   const keyDrag   = useDragChange(semitones, setSemitones, 14, 1, -12, 12);
 
   // ── analyze handler ──────────────────────────────────────────────────────
@@ -286,7 +285,6 @@ useEffect(() => {
   const tracks   = (song.tracks        ?? []) as AudioTrack[];
 
   const activeLi   = getActiveIdx(lyrics, displayTime);
-  const bpmDisplay = Math.round(song.bpm * tempo);
   const keyDisplay = shiftKey(song.key, semitones);
 
   const totalBeats = song?.beatGrid?.length || 0;
@@ -402,8 +400,7 @@ if (song?.beatGrid && timeline.length > 0) {
   setTime={handleSeek}
   song={song}
   resetIdle={resetIdle}
-  tempoDrag={tempoDrag}
-  bpmDisplay={bpmDisplay}
+  bpm={song.bpm}
   tempo={tempo}
   setTempo={setTempo}
   playing={playing}
