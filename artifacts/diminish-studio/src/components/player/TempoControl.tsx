@@ -48,14 +48,16 @@ const ratioLabel = (t: number) => (t === 1 ? "1×" : `${round2(t)}×`);
 
 // ─── Static dial furniture (ticks + labels) ──────────────────────────────────
 function DialTicks() {
-  const ticks: React.ReactNode[] = [];
   const oneAngle = tempoToAngle(1);
+  const snapAngles = SNAPS.map(tempoToAngle);
+
+  // تیک‌های ریز روی گرید ۱۰ درجه‌ای (به‌جز جای تیک‌های اصلی)
+  const minor: React.ReactNode[] = [];
   for (let a = A0; a <= A0 + SWEEP + 0.01; a += 10) {
-    const isOne = Math.abs(a - oneAngle) < 1;
-    const isSnap = !isOne && SNAPS.some((s) => Math.abs(tempoToAngle(s) - a) < 1);
-    const p1 = polar(a, isSnap || isOne ? 101 : 104.5);
-    const p2 = polar(a, isSnap || isOne ? 113 : 110);
-    ticks.push(
+    if (snapAngles.some((s) => Math.abs(s - a) < 1)) continue;
+    const p1 = polar(a, 104.5);
+    const p2 = polar(a, 110);
+    minor.push(
       <line
         key={a}
         x1={p1.x}
@@ -63,17 +65,32 @@ function DialTicks() {
         x2={p2.x}
         y2={p2.y}
         strokeLinecap="round"
-        strokeWidth={isOne ? 2.2 : isSnap ? 1.5 : 1}
-        className={
-          isOne
-            ? "stroke-primary"
-            : isSnap
-              ? "stroke-muted-foreground/45"
-              : "stroke-muted-foreground/20"
-        }
+        strokeWidth={1}
+        className="stroke-muted-foreground/20"
       />,
     );
   }
+
+  // تیک‌های اصلی روی نقاط اسنپ — تیکِ ۱× با رنگ تمپو برجسته می‌شه
+  const major = SNAPS.map((s) => {
+    const a = tempoToAngle(s);
+    const isOne = Math.abs(a - oneAngle) < 1;
+    const p1 = polar(a, 101);
+    const p2 = polar(a, 113);
+    return (
+      <line
+        key={s}
+        x1={p1.x}
+        y1={p1.y}
+        x2={p2.x}
+        y2={p2.y}
+        strokeLinecap="round"
+        strokeWidth={isOne ? 2.2 : 1.5}
+        className={isOne ? "stroke-primary" : "stroke-muted-foreground/45"}
+      />
+    );
+  });
+
   const label = (a: number, txt: string, anchor: "start" | "middle" | "end") => {
     const p = polar(a, 72);
     return (
@@ -89,9 +106,10 @@ function DialTicks() {
   };
   return (
     <g>
-      {ticks}
+      {minor}
+      {major}
       {label(A0, "0.5×", "end")}
-      {label(tempoToAngle(1), "1×", "middle")}
+      {label(oneAngle, "1×", "middle")}
       {label(A0 + SWEEP, "1.5×", "start")}
     </g>
   );
