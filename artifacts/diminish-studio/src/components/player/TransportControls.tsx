@@ -13,7 +13,7 @@ export function TransportControls({
     <motion.div
       animate={{ opacity: uiVisible ? 1 : 0, y: uiVisible ? 0 : 6 }}
       transition={{ duration: 0.35 }}
-      className="relative flex-shrink-0 border-t border-border/40 bg-card/20 px-4 pt-2.5 flex flex-col gap-2.5"
+      className="flex-shrink-0 border-t border-border/40 bg-card/20 px-4 pt-2.5 flex flex-col gap-2.5"
       style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))", pointerEvents: uiVisible ? "auto" : "none" }}
       data-testid="transport"
     >
@@ -48,7 +48,6 @@ export function TransportControls({
 
       <div className="flex items-center justify-between">
         <TempoControl
-          bpm={song.bpm}
           tempo={tempo}
           setTempo={setTempo}
           resetIdle={resetIdle}

@@ -29,7 +29,7 @@ function Preview() {
         {/* شبیه‌سازی نوار ترنسپورت پلیر */}
         <div className="relative flex flex-col gap-2.5 rounded-2xl border-t border-border/40 bg-card/20 px-4 pt-2.5 pb-4">
           <div className="flex items-center justify-between">
-            <TempoControl bpm={124} tempo={tempo} setTempo={setTempo} resetIdle={() => {}} />
+            <TempoControl tempo={tempo} setTempo={setTempo} resetIdle={() => {}} />
 
             <div className="flex items-center gap-4">
               <button className="text-muted-foreground"><SkipBack className="h-5 w-5" /></button>
