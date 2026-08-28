@@ -1,0 +1,9 @@
+{
+  "framework": "vite",
+  "installCommand": "corepack enable && pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm --filter @workspace/diminish-studio build",
+  "outputDirectory": "apps/diminish-studio/dist/public",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

@@ -1,5 +1,10 @@
 packages:
-  - apps/*
+  # NOTE: apps/admin and apps/admin-new are intentionally NOT in the
+  # workspace. They are work-in-progress and must never affect CI/builds.
+  # Re-add them here once they are production-ready.
+  - apps/diminish-studio
+  - apps/api-server
+  - apps/mockup-sandbox
   - packages/*
   - scripts
 

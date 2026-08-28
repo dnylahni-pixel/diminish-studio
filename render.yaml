@@ -1,0 +1,46 @@
+# Render Blueprint — Backend API
+# Use: Render dashboard -> New -> Blueprint -> select this repo.
+# Keep the service name "diminish-api" so Render adopts the existing service
+# and the public URL stays unchanged.
+services:
+  - type: web
+    name: diminish-api
+    runtime: node
+    branch: unified-local-development
+    autoDeploy: true
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @workspace/api-server build
+    startCommand: pnpm --filter @workspace/api-server start
+    healthCheckPath: /api/healthz
+    envVars:
+      # Static values (non-secret), versioned in the repo
+      - key: NODE_ENV
+        value: production
+      - key: APP_ENVIRONMENT
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      - key: RUN_MIGRATIONS
+        value: "false"
+      - key: DATABASE_ENVIRONMENT
+        value: production
+      # Secrets: set these once in the Render dashboard when adopting the blueprint
+      - key: DATABASE_URL
+        sync: false
+      - key: CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: B2_ENDPOINT
+        sync: false
+      - key: B2_REGION
+        sync: false
+      - key: B2_KEY_ID
+        sync: false
+      - key: B2_APPLICATION_KEY
+        sync: false
+      - key: BUCKET_NAME
+        sync: false
+      - key: RUNPOD_ENDPOINT
+        sync: false
+      - key: RUNPOD_API_KEY
+        sync: false

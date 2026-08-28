@@ -16,7 +16,7 @@
     "env:status": "node ./scripts/env-status.mjs",
     "api:codegen": "pnpm --filter @workspace/api-spec run codegen",
     "api:check": "pnpm run api:codegen && git diff --exit-code -- packages/api-client-react/src/generated packages/api-zod/src/generated",
-    "build": "pnpm run typecheck && pnpm -r --if-present --filter \"!@workspace/admin\" run build",
+    "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./apps/**\" --filter \"./scripts\" --if-present run typecheck"
   },
