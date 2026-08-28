@@ -21,6 +21,7 @@ import {
   incrementStorageUsed,
 } from "./uploads.repository";
 import { getOrCreateUser } from "../../lib/user-utils";
+import { ClerkServiceError } from "../../lib/errors";
 import type { PresignBody, ConfirmBody } from "./uploads.schema";
 import { backendConfig } from "../../config";
 
@@ -69,12 +70,26 @@ export async function handlePresign(body: PresignBody, userId: string) {
   try {
     const dbUser = await getOrCreateUser(userId);
     dbUserId = dbUser.id;
-  } catch {
+  } catch (err) {
+    if (err instanceof ClerkServiceError) {
+      logger.warn({ err, userId }, "Clerk rejected user resolution");
+      return {
+        status: err.httpStatus,
+        body: {
+          error: "Could not verify your account. Please sign in again.",
+          code:
+            err.httpStatus === 401
+              ? UploadErrorCode.ERR_UNAUTHORIZED
+              : UploadErrorCode.ERR_SERVER_ERROR,
+        },
+      };
+    }
+    logger.error({ err, userId }, "Failed to resolve upload user");
     return {
-      status: 404,
+      status: 500,
       body: {
-        error: "User account not found.",
-        code: UploadErrorCode.ERR_USER_NOT_FOUND,
+        error: "Could not resolve account. Please try again.",
+        code: UploadErrorCode.ERR_SERVER_ERROR,
       },
     };
   }
@@ -158,12 +173,26 @@ export async function handleConfirm(body: ConfirmBody, userId: string) {
   try {
     const dbUser = await getOrCreateUser(userId);
     dbUserId = dbUser.id;
-  } catch {
+  } catch (err) {
+    if (err instanceof ClerkServiceError) {
+      logger.warn({ err, userId }, "Clerk rejected user resolution");
+      return {
+        status: err.httpStatus,
+        body: {
+          error: "Could not verify your account. Please sign in again.",
+          code:
+            err.httpStatus === 401
+              ? UploadErrorCode.ERR_UNAUTHORIZED
+              : UploadErrorCode.ERR_SERVER_ERROR,
+        },
+      };
+    }
+    logger.error({ err, userId }, "Failed to resolve upload user");
     return {
-      status: 404,
+      status: 500,
       body: {
-        error: "User account not found.",
-        code: UploadErrorCode.ERR_USER_NOT_FOUND,
+        error: "Could not resolve account. Please try again.",
+        code: UploadErrorCode.ERR_SERVER_ERROR,
       },
     };
   }
