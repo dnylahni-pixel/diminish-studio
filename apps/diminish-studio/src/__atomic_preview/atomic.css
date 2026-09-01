@@ -1,0 +1,39 @@
+/* __atomic_preview/atomic.css — scoped clone of sidebar-atomic foundations/global.css
+   No global @import of Google Fonts — host app provides fonts.
+   All selectors prefixed with .atomic-scope to avoid leaking globally.
+   Keyframes are global by spec but included here for completeness. */
+
+.atomic-scope * { font-family: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif; }
+.atomic-scope .lux-ease { transition-timing-function: cubic-bezier(0.32,0.72,0,1); }
+.atomic-scope .lux-transition { transition-timing-function: cubic-bezier(0.32,0.72,0,1); transition-duration: 400ms; }
+.atomic-scope .logo-degree { transition: transform 640ms cubic-bezier(0.32,0.72,0,1); display: inline-block; }
+.atomic-scope .logo-wrap:hover .logo-degree { transform: rotate(180deg); }
+.atomic-scope .nav-shine { background: linear-gradient(100deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0) 100%); opacity: 0; transition: opacity 300ms cubic-bezier(0.32,0.72,0,1), transform 640ms cubic-bezier(0.32,0.72,0,1); transform: translateX(-100%); }
+.atomic-scope .nav-item:hover .nav-shine { opacity: 1; transform: translateX(100%); }
+.atomic-scope .eq-bar { will-change: height, transform; }
+.atomic-scope .track-enter-wrap { opacity:0; animation: rowEnter 0.4s cubic-bezier(0.32,0.72,0,1) forwards; }
+.atomic-scope .heart-burst { animation: heartBurst 0.55s cubic-bezier(0.34,1.56,0.64,1) }
+.atomic-scope .marquee-inner { animation: marquee 14s linear infinite; }
+
+/* Scrollbar — scoped to atomic container only */
+.atomic-scope ::-webkit-scrollbar { width: 0px; }
+
+/* Keyframes — must remain global (unscoped) but defined here for isolation */
+@keyframes dividerIn { from { transform: scaleX(0.6); opacity: 0; } to { transform: scaleX(1); opacity: 1; } }
+@keyframes eq1 { 0%,100%{height:4px; transform:scaleY(0.7)} 25%{height:10px} 50%{height:14px; transform:scaleY(1.2)} 75%{height:8px} }
+@keyframes eq2 { 0%,100%{height:9px} 30%{height:4px; transform:scaleY(0.6)} 60%{height:12px; transform:scaleY(1.15)} }
+@keyframes eq3 { 0%,100%{height:6px} 40%{height:13px; transform:scaleY(1.25)} 80%{height:5px} }
+@keyframes rowEnter { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:translateY(0) } }
+@keyframes toastIn { from { transform: translate(-50%, 12px); opacity:0 } to { transform: translate(-50%, 0); opacity:1 } }
+@keyframes heartBurst { 0%{transform:scale(1)} 25%{transform:scale(1.45)} 50%{transform:scale(0.9)} 100%{transform:scale(1)} }
+@keyframes menuIn { from { opacity:0; transform: translateY(6px) scale(0.98) } to { opacity:1; transform: translateY(0) scale(1) } }
+@keyframes playerIn { from { opacity: 0; transform: translateY(28px) } to { opacity: 1; transform: translateY(0) } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: translateY(0) } }
+@keyframes popIn { 0% { opacity: 0; transform: scale(0.94) } 100% { opacity: 1; transform: scale(1) } }
+@keyframes spinSlow { to { transform: rotate(360deg) } }
+@keyframes pulseDot { 0%, 100% { transform: scale(1); opacity: 0.45 } 50% { transform: scale(1.7); opacity: 1 } }
+@keyframes countPulse { 0% { transform: scale(1.4); opacity: 0 } 100% { transform: scale(1); opacity: 1 } }
+@keyframes marquee { to { transform: translateX(-50%) } }
+@keyframes bufferedPulse { 0%, 100% { opacity: 0.28; } 50% { opacity: 0.42; } }
+@keyframes skeletonSlide { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
+@keyframes keyBump { 0% { transform: scale(1); } 45% { transform: scale(1.045); } 100% { transform: scale(1); } }

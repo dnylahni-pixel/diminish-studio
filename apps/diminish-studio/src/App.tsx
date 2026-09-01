@@ -18,6 +18,7 @@ import { PlayerPage } from "@/pages/player";
 import { LearnPage } from "@/pages/learn";
 import { ProcessPage } from "@/pages/process";
 import { ProfilePage } from "@/pages/profile";
+import LabSidebarAtomicPage from "@/pages/lab/sidebar-atomic";
 
 const queryClient = new QueryClient();
 
@@ -93,6 +94,8 @@ function Router() {
           </AppLayout>
         </Route>
       )}
+
+      <Route path="/lab/sidebar-atomic" component={LabSidebarAtomicPage} />
 
       <Route component={NotFound} />
     </Switch>
