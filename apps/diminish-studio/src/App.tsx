@@ -27,11 +27,30 @@ function AuthSetup() {
 
   useEffect(() => {
     setAuthTokenGetter(async () => {
-      const token = await getToken();
-      return token;
+      try {
+        const token = await getToken();
+        return token;
+      } catch {
+        // Clerk may be misconfigured on preview domains — degrade gracefully
+        // instead of throwing and white-screening the whole app.
+        return null;
+      }
     });
   }, [getToken]);
 
+  return null;
+}
+
+/**
+ * Rendered when Clerk is unavailable (preview without env vars, or /lab/*).
+ * Ensures api-client has a getter that resolves to null so requests degrade
+ * to "login required" instead of white-screen. Library/Upload will show
+ * "Failed to load library" / auth error rather than crashing.
+ */
+function NoAuthSetup() {
+  useEffect(() => {
+    setAuthTokenGetter(async () => null);
+  }, []);
   return null;
 }
 
@@ -102,13 +121,18 @@ function Router() {
   );
 }
 
-function App() {
+type AppProps = {
+  /** When false, App renders without Clerk — used for /lab/* and preview fallback. */
+  enableClerk?: boolean;
+};
+
+function App({ enableClerk = true }: AppProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <RuntimeConfigProvider>
         <TooltipProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <AuthSetup />
+            {enableClerk ? <AuthSetup /> : <NoAuthSetup />}
             <Router />
           </WouterRouter>
           <Toaster />
